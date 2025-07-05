@@ -1,3 +1,5 @@
+import React from 'react';
+
 export interface User {
   id: number;
   email: string;
@@ -92,4 +94,35 @@ export interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   loading: boolean;
+}
+
+export interface AlertOptions {
+  id?: string;
+  title?: string;
+  message: string;
+  type: 'success' | 'error' | 'warning' | 'info';
+  duration?: number; // in milliseconds, 0 means no auto-close
+  onConfirm?: () => void | Promise<void>;
+  onCancel?: () => void | Promise<void>;
+  confirmText?: string;
+  cancelText?: string;
+  icon?: React.ReactNode;
+}
+
+export interface Alert extends AlertOptions {
+  id: string;
+  createdAt: Date;
+  isVisible: boolean;
+}
+
+export interface AlertContextType {
+  alerts: Alert[];
+  showAlert: (options: AlertOptions) => string;
+  hideAlert: (id: string) => void;
+  clearAllAlerts: () => void;
+  // Convenience methods
+  success: (message: string, options?: Partial<AlertOptions>) => string;
+  error: (message: string, options?: Partial<AlertOptions>) => string;
+  warning: (message: string, options?: Partial<AlertOptions>) => string;
+  info: (message: string, options?: Partial<AlertOptions>) => string;
 }

@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { AlertProvider, AlertContainer, AlertServiceInitializer } from './components/Alert';
 import { ProtectedRoute } from './components/Auth/ProtectedRoute';
 import { LoginForm } from './components/Auth/LoginForm';
 import { Layout } from './components/Layout/Layout';
@@ -15,26 +16,30 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <Router>
-          <Routes>
-            <Route path="/login" element={<LoginForm />} />
-            <Route
-              path="/*"
-              element={
-                <ProtectedRoute>
-                  <Layout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<Dashboard />} />
-              <Route path="campaigns" element={<Campaigns />} />
-              <Route path="addresses" element={<Addresses />} />
-              <Route path="outscrapper" element={<Outscrapper />} />
-              <Route path="analytics" element={<Analytics />} />
-            </Route>
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </Router>
+        <AlertProvider>
+          <AlertServiceInitializer />
+          <Router>
+            <Routes>
+              <Route path="/login" element={<LoginForm />} />
+              <Route
+                path="/*"
+                element={
+                  <ProtectedRoute>
+                    <Layout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<Dashboard />} />
+                <Route path="campaigns" element={<Campaigns />} />
+                <Route path="addresses" element={<Addresses />} />
+                <Route path="outscrapper" element={<Outscrapper />} />
+                <Route path="analytics" element={<Analytics />} />
+              </Route>
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Router>
+          <AlertContainer />
+        </AlertProvider>
       </AuthProvider>
     </ThemeProvider>
   );
