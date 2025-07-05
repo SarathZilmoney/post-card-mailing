@@ -4,10 +4,17 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "setup-env": "node setup-env.js",
+    "dev": "vite --mode staging",
+    "dev:staging": "vite --mode staging",
+    "dev:production": "vite --mode production",
+    "build": "vite build --mode production",
+    "build:staging": "vite build --mode staging",
+    "build:production": "vite build --mode production",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "preview:staging": "vite preview --mode staging",
+    "preview:production": "vite preview --mode production"
   },
   "dependencies": {
     "lucide-react": "^0.344.0",

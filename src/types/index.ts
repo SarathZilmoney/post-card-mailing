@@ -1,8 +1,25 @@
 export interface User {
-  id: string;
+  id: number;
   email: string;
-  name: string;
-  role: 'admin' | 'user';
+  nick_name: string;
+  admin_type: string;
+  created_at: string | null;
+  updated_at: string;
+  added_by_admin: number | null;
+  status: number;
+  deleted_at: string | null;
+  admin_department: string | null;
+  admin_uuid: string;
+}
+
+export interface LoginResponse {
+  success: boolean;
+  data: {
+    token: string;
+    admin: User;
+    two_factor: any[];
+    admin_uuid: string;
+  };
 }
 
 export interface Campaign {
@@ -52,8 +69,10 @@ export interface OutscrapperFetch {
 export interface OutscrapperFilters {
   state?: string;
   city?: string;
+  zipCode?: string;
   businessType?: string;
   keyword?: string;
+  ignoreNoReviews?: boolean;
   limit: number;
 }
 
@@ -71,6 +90,6 @@ export interface Analytics {
 export interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   loading: boolean;
 }

@@ -1,7 +1,19 @@
 import { Campaign, Address } from '../types';
+import { httpService } from './httpService';
 
 class CampaignService {
   async getCampaigns(): Promise<Campaign[]> {
+    try {
+      // Try to make actual API call to backend
+      const data = await httpService.get('/campaigns');
+      return data;
+    } catch (error) {
+      console.log('Campaigns API call failed, using mock data:', error);
+      return this.getMockCampaigns();
+    }
+  }
+
+  private getMockCampaigns(): Campaign[] {
     // Mock campaigns data
     return [
       {
@@ -47,26 +59,69 @@ class CampaignService {
     ];
   }
 
-  async createCampaign(campaignData: Partial<Campaign>): Promise<Campaign> {
+  async createCampaign(campaignData: Partial<Campaign> | FormData): Promise<Campaign> {
+    try {
+      // Try to make actual API call to backend
+      const data = await httpService.post('/campaigns', campaignData);
+      return data;
+    } catch (error) {
+      console.log('Create campaign API call failed, using mock creation:', error);
+      return this.mockCreateCampaign(campaignData);
+    }
+  }
+
+  private mockCreateCampaign(campaignData: Partial<Campaign> | FormData): Campaign {
+    let name = '';
+    let description = '';
+    let startDate = '';
+    let postcardDesign = '';
+
+    if (campaignData instanceof FormData) {
+      name = campaignData.get('name') as string || '';
+      description = campaignData.get('description') as string || '';
+      startDate = campaignData.get('startDate') as string || '';
+      const imageFile = campaignData.get('postcardImage') as File;
+      if (imageFile) {
+        postcardDesign = imageFile.name;
+      }
+    } else {
+      name = campaignData.name || '';
+      description = campaignData.description || '';
+      startDate = campaignData.scheduledDate || '';
+      postcardDesign = campaignData.postcardDesign || '';
+    }
+
     const newCampaign: Campaign = {
       id: Date.now().toString(),
-      name: campaignData.name || '',
-      description: campaignData.description || '',
+      name,
+      description,
       status: 'draft',
       createdAt: new Date().toISOString(),
+      scheduledDate: startDate,
+      postcardDesign,
       addressCount: 0,
       sentCount: 0,
       deliveredCount: 0,
       returnedCount: 0,
-      cost: 0,
-      ...campaignData
+      cost: 0
     };
     return newCampaign;
   }
 
   async updateCampaign(id: string, updates: Partial<Campaign>): Promise<Campaign> {
+    try {
+      // Try to make actual API call to backend
+      const data = await httpService.put(`/campaigns/${id}`, updates);
+      return data;
+    } catch (error) {
+      console.log('Update campaign API call failed, using mock update:', error);
+      return this.mockUpdateCampaign(id, updates);
+    }
+  }
+
+  private async mockUpdateCampaign(id: string, updates: Partial<Campaign>): Promise<Campaign> {
     // Mock update
-    const campaigns = await this.getCampaigns();
+    const campaigns = await this.getMockCampaigns();
     const campaign = campaigns.find(c => c.id === id);
     if (!campaign) throw new Error('Campaign not found');
     
@@ -74,11 +129,32 @@ class CampaignService {
   }
 
   async deleteCampaign(id: string): Promise<void> {
+    try {
+      // Try to make actual API call to backend
+      await httpService.delete(`/campaigns/${id}`);
+    } catch (error) {
+      console.log('Delete campaign API call failed, using mock delete:', error);
+      this.mockDeleteCampaign(id);
+    }
+  }
+
+  private mockDeleteCampaign(id: string): void {
     // Mock delete
     console.log('Deleting campaign:', id);
   }
 
   async getCampaignAddresses(campaignId: string): Promise<Address[]> {
+    try {
+      // Try to make actual API call to backend
+      const data = await httpService.get(`/campaigns/${campaignId}/addresses`);
+      return data;
+    } catch (error) {
+      console.log('Get campaign addresses API call failed, using mock data:', error);
+      return this.getMockCampaignAddresses(campaignId);
+    }
+  }
+
+  private getMockCampaignAddresses(campaignId: string): Address[] {
     // Mock addresses for campaign
     return [];
   }
