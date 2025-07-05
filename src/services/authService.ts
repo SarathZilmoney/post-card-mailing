@@ -1,52 +1,78 @@
-import { User } from '../types';
-
-interface LoginResponse {
-  user: User;
-  token: string;
-}
+import { User, LoginResponse } from '../types';
+import { urlService } from './urlService';
 
 class AuthService {
-  async login(email: string, password: string): Promise<LoginResponse> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+  async login(email: string, password: string): Promise<{ user: User; token: string }> {
+    const backendUrl = urlService.getBackendUrl();
     
-    // Mock login for demo purposes
-    if (email === 'admin@example.com' && password === 'password') {
-      const mockUser: User = {
-        id: '1',
-        email: 'admin@example.com',
-        name: 'Admin User',
-        role: 'admin'
-      };
-      return {
-        user: mockUser,
-        token: 'mock-jwt-token-' + Date.now()
-      };
+    // Make actual API call to the sua/login endpoint
+    const response = await fetch(`${backendUrl}/sua/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (response.ok) {
+      const data: LoginResponse = await response.json();
+      
+      if (data.success && data.data) {
+        return {
+          user: data.data.admin,
+          token: data.data.token
+        };
+      } else {
+        throw new Error('Login failed');
+      }
+    } else {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Login failed');
     }
-    
-    throw new Error('Invalid credentials');
   }
 
   async validateToken(token: string): Promise<User> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
+    const backendUrl = urlService.getBackendUrl();
     
-    // Mock validation for demo
-    if (token && token.startsWith('mock-jwt-token')) {
-      return {
-        id: '1',
-        email: 'admin@example.com',
-        name: 'Admin User',
-        role: 'admin'
-      };
+    // Make actual API call to backend
+    const response = await fetch(`${backendUrl}/sua/validate`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return data.data?.admin || data.admin || data.user;
+    } else {
+      throw new Error('Token validation failed');
     }
-    
-    throw new Error('Invalid token');
   }
 
   async logout(): Promise<void> {
-    // Clear any stored data if needed
-    return Promise.resolve();
+    const backendUrl = urlService.getBackendUrl();
+    
+    try {
+      // Try to make actual API call to backend
+      const token = localStorage.getItem('token');
+      if (token) {
+        await fetch(`${backendUrl}/sua/logout`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+    } catch (error) {
+      // If API call fails, just continue with local logout
+      console.log('Logout API call failed, continuing with local logout:', error);
+    }
+    
+    // Clear any stored data
+    localStorage.removeItem('token');
   }
 }
 

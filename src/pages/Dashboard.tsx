@@ -2,13 +2,16 @@ import React from 'react';
 import { DashboardStats } from '../components/Dashboard/DashboardStats';
 import { RecentCampaigns } from '../components/Dashboard/RecentCampaigns';
 import { OutscrapperActivity } from '../components/Dashboard/OutscrapperActivity';
+import { useTheme } from '../context/ThemeContext';
 
 export const Dashboard: React.FC = () => {
+  const { isDark } = useTheme();
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fadeIn">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <h1 className="text-3xl font-bold gradient-text mb-2">Dashboard</h1>
+        <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
           Welcome back! Here's what's happening with your campaigns.
         </p>
       </div>

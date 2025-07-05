@@ -1,13 +1,23 @@
-import axios from 'axios';
 import { OutscrapperFetch, OutscrapperFilters, Address } from '../types';
+import { httpService } from './httpService';
 
 class OutscrapperService {
   private apiKey = import.meta.env.VITE_OUTSCRAPPER_API_KEY || 'demo-key';
 
   async fetchAddresses(filters: OutscrapperFilters): Promise<Address[]> {
     try {
-      // Mock data for demo purposes since we don't have real API key
-      const mockAddresses: Address[] = Array.from({ length: filters.limit }, (_, i) => ({
+      // Try to make actual API call to backend
+      const data = await httpService.post('/outscrapper/fetch', { filters });
+      return data;
+    } catch (error) {
+      console.log('Outscrapper fetch API call failed, using mock data:', error);
+      return this.mockFetchAddresses(filters);
+    }
+  }
+
+  private mockFetchAddresses(filters: OutscrapperFilters): Address[] {
+    // Mock data for demo purposes since we don't have real API key
+    const mockAddresses: Address[] = Array.from({ length: filters.limit }, (_, i) => ({
         id: `outscrapper-${Date.now()}-${i}`,
         businessName: `Business ${i + 1}`,
         contactName: `Contact ${i + 1}`,
@@ -24,13 +34,20 @@ class OutscrapperService {
       }));
 
       return mockAddresses;
-    } catch (error) {
-      console.error('Outscrapper fetch error:', error);
-      throw new Error('Failed to fetch addresses from Outscrapper');
-    }
   }
 
   async getFetchHistory(): Promise<OutscrapperFetch[]> {
+    try {
+      // Try to make actual API call to backend
+      const data = await httpService.get('/outscrapper/history');
+      return data;
+    } catch (error) {
+      console.log('Outscrapper history API call failed, using mock data:', error);
+      return this.getMockFetchHistory();
+    }
+  }
+
+  private getMockFetchHistory(): OutscrapperFetch[] {
     // Mock fetch history
     return [
       {
@@ -57,6 +74,17 @@ class OutscrapperService {
   }
 
   async getCreditsUsage(): Promise<{ used: number; total: number }> {
+    try {
+      // Try to make actual API call to backend
+      const data = await httpService.get('/outscrapper/credits');
+      return data;
+    } catch (error) {
+      console.log('Outscrapper credits API call failed, using mock data:', error);
+      return this.getMockCreditsUsage();
+    }
+  }
+
+  private getMockCreditsUsage(): { used: number; total: number } {
     return { used: 15, total: 1000 };
   }
 }

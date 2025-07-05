@@ -1,4 +1,4 @@
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 export const OUTSCRAPPER_API_URL = 'https://api.outscraper.com/maps/search-v2';
 
 export const CAMPAIGN_STATUSES = {

@@ -20,7 +20,7 @@ export const useCampaigns = () => {
     }
   };
 
-  const createCampaign = async (campaignData: Partial<Campaign>) => {
+  const createCampaign = async (campaignData: Partial<Campaign> | FormData) => {
     try {
       const newCampaign = await campaignService.createCampaign(campaignData);
       setCampaigns(prev => [newCampaign, ...prev]);
