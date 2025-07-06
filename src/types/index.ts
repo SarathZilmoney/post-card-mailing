@@ -37,6 +37,8 @@ export interface Campaign {
   deliveredCount: number;
   returnedCount: number;
   cost: number;
+  category?: string;
+  targetAddressCount?: number;
 }
 
 export interface Address {
@@ -125,4 +127,11 @@ export interface AlertContextType {
   error: (message: string, options?: Partial<AlertOptions>) => string;
   warning: (message: string, options?: Partial<AlertOptions>) => string;
   info: (message: string, options?: Partial<AlertOptions>) => string;
+}
+
+export interface AddressCategory {
+  id: string;
+  name: string;
+  description?: string;
+  count: number;
 }

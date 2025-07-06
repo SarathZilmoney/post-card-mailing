@@ -10,8 +10,12 @@ export const Dashboard: React.FC = () => {
   return (
     <div className="space-y-6 animate-fadeIn">
       <div>
-        <h1 className="text-3xl font-bold gradient-text mb-2">Dashboard</h1>
-        <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+        <h1 className={`text-3xl font-bold ${
+          isDark ? 'gradient-text' : 'gradient-text-light'
+        } mb-2`}>Dashboard</h1>
+        <p className={`${
+          isDark ? 'text-gray-400' : 'text-light-600'
+        }`}>
           Welcome back! Here's what's happening with your campaigns.
         </p>
       </div>

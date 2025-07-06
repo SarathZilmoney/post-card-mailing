@@ -24,6 +24,8 @@ class CampaignService {
         createdAt: '2024-01-15T10:00:00Z',
         scheduledDate: '2024-01-20T09:00:00Z',
         postcardDesign: 'spring-promo.jpg',
+        category: 'restaurants',
+        targetAddressCount: 150,
         addressCount: 150,
         sentCount: 150,
         deliveredCount: 142,
@@ -38,6 +40,8 @@ class CampaignService {
         createdAt: '2024-01-10T14:30:00Z',
         scheduledDate: '2024-01-12T08:00:00Z',
         postcardDesign: 'real-estate.jpg',
+        category: 'real_estate',
+        targetAddressCount: 75,
         addressCount: 75,
         sentCount: 75,
         deliveredCount: 70,
@@ -50,6 +54,8 @@ class CampaignService {
         description: 'Introducing new healthcare services',
         status: 'draft',
         createdAt: '2024-01-18T16:20:00Z',
+        category: 'healthcare',
+        targetAddressCount: 200,
         addressCount: 0,
         sentCount: 0,
         deliveredCount: 0,
@@ -75,11 +81,15 @@ class CampaignService {
     let description = '';
     let startDate = '';
     let postcardDesign = '';
+    let category = '';
+    let targetAddressCount = 0;
 
     if (campaignData instanceof FormData) {
       name = campaignData.get('name') as string || '';
       description = campaignData.get('description') as string || '';
       startDate = campaignData.get('startDate') as string || '';
+      category = campaignData.get('category') as string || '';
+      targetAddressCount = parseInt(campaignData.get('targetAddressCount') as string || '0', 10);
       const imageFile = campaignData.get('postcardImage') as File;
       if (imageFile) {
         postcardDesign = imageFile.name;
@@ -89,6 +99,8 @@ class CampaignService {
       description = campaignData.description || '';
       startDate = campaignData.scheduledDate || '';
       postcardDesign = campaignData.postcardDesign || '';
+      category = campaignData.category || '';
+      targetAddressCount = campaignData.targetAddressCount || 0;
     }
 
     const newCampaign: Campaign = {
@@ -99,6 +111,8 @@ class CampaignService {
       createdAt: new Date().toISOString(),
       scheduledDate: startDate,
       postcardDesign,
+      category,
+      targetAddressCount,
       addressCount: 0,
       sentCount: 0,
       deliveredCount: 0,
@@ -116,6 +130,28 @@ class CampaignService {
     } catch (error) {
       console.log('Update campaign API call failed, using mock update:', error);
       return this.mockUpdateCampaign(id, updates);
+    }
+  }
+
+  async runCampaign(id: string): Promise<Campaign> {
+    try {
+      // Try to make actual API call to backend
+      const data = await httpService.post(`/campaigns/${id}/run`);
+      return data;
+    } catch (error) {
+      console.log('Run campaign API call failed, using mock run:', error);
+      return this.mockRunCampaign(id);
+    }
+  }
+
+  async stopCampaign(id: string): Promise<Campaign> {
+    try {
+      // Try to make actual API call to backend
+      const data = await httpService.post(`/campaigns/${id}/stop`);
+      return data;
+    } catch (error) {
+      console.log('Stop campaign API call failed, using mock stop:', error);
+      return this.mockStopCampaign(id);
     }
   }
 
@@ -141,6 +177,24 @@ class CampaignService {
   private mockDeleteCampaign(id: string): void {
     // Mock delete
     console.log('Deleting campaign:', id);
+  }
+
+  private async mockRunCampaign(id: string): Promise<Campaign> {
+    // Mock run campaign
+    const campaigns = await this.getMockCampaigns();
+    const campaign = campaigns.find(c => c.id === id);
+    if (!campaign) throw new Error('Campaign not found');
+    
+    return { ...campaign, status: 'active' };
+  }
+
+  private async mockStopCampaign(id: string): Promise<Campaign> {
+    // Mock stop campaign
+    const campaigns = await this.getMockCampaigns();
+    const campaign = campaigns.find(c => c.id === id);
+    if (!campaign) throw new Error('Campaign not found');
+    
+    return { ...campaign, status: 'paused' };
   }
 
   async getCampaignAddresses(campaignId: string): Promise<Address[]> {

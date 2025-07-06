@@ -1,5 +1,4 @@
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-export const OUTSCRAPPER_API_URL = 'https://api.outscraper.com/maps/search-v2';
 
 export const CAMPAIGN_STATUSES = {
   DRAFT: 'draft',
@@ -31,17 +30,42 @@ export const US_STATES = [
 ];
 
 export const BUSINESS_TYPES = [
-  'Restaurant',
-  'Retail Store',
-  'Real Estate',
-  'Healthcare',
-  'Automotive',
-  'Professional Services',
-  'Beauty & Wellness',
-  'Education',
-  'Technology',
-  'Construction',
-  'Other'
+  'account',
+  'restaurant',
+  'retail',
+  'real_estate',
+  'healthcare',
+  'automotive',
+  'professional_services',
+  'beauty',
+  'education',
+  'technology',
+  'construction',
+  'finance',
+  'entertainment',
+  'government',
+  'non_profit',
+  'other'
 ];
+
+// Human-readable labels for business types
+export const BUSINESS_TYPE_LABELS = {
+  account: 'Account',
+  restaurant: 'Restaurant',
+  retail: 'Retail Store',
+  real_estate: 'Real Estate',
+  healthcare: 'Healthcare',
+  automotive: 'Automotive',
+  professional_services: 'Professional Services',
+  beauty: 'Beauty & Wellness',
+  education: 'Education',
+  technology: 'Technology',
+  construction: 'Construction',
+  finance: 'Finance',
+  entertainment: 'Entertainment',
+  government: 'Government',
+  non_profit: 'Non-Profit',
+  other: 'Other'
+} as const;
 
 export const ITEMS_PER_PAGE = 25;
