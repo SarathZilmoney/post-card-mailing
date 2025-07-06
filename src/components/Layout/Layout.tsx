@@ -9,20 +9,22 @@ export const Layout: React.FC = () => {
   const { isDark } = useTheme();
 
   return (
-    <div className={`flex h-screen ${
+    <div className={`min-h-screen ${
       isDark 
         ? 'bg-gradient-to-br from-dark-950 via-dark-900 to-dark-800' 
-        : 'bg-gradient-to-br from-gray-50 via-white to-gray-100'
+        : 'bg-gradient-light-brand'
     }`}>
-      <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Sidebar - Hidden for horizontal nav experiment */}
+      {/* <Sidebar /> */}
+      
+      <div className="flex flex-col">
         <Header />
-        <main className={`flex-1 overflow-auto p-6 ${
+        <main className={`flex-1 min-h-screen ${
           isDark 
-            ? 'bg-dark-900/50 backdrop-blur-sm' 
-            : 'bg-white/50 backdrop-blur-sm'
+            ? 'bg-dark-900/30' 
+            : 'bg-light-50/60 backdrop-blur-sm'
         }`}>
-          <div className="max-w-7xl mx-auto">
+          <div className="max-w-screen-2xl mx-auto px-8 py-6">
             <Outlet />
           </div>
         </main>
@@ -33,8 +35,9 @@ export const Layout: React.FC = () => {
           duration: 4000,
           style: {
             background: isDark ? '#1e293b' : '#ffffff',
-            color: isDark ? '#f8fafc' : '#1f2937',
-            border: isDark ? '1px solid #8b5cf6' : '1px solid #d1d5db',
+            color: isDark ? '#f8fafc' : '#27272a',
+            border: isDark ? '1px solid #8b5cf6' : '1px solid #e4e4e7',
+            boxShadow: isDark ? '0 8px 32px rgba(0, 0, 0, 0.3)' : '0 8px 32px rgba(0, 0, 0, 0.08)',
           },
           success: {
             iconTheme: {

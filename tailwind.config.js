@@ -40,6 +40,46 @@ export default {
           800: '#9d174d',
           900: '#831843',
         },
+        // Enhanced light mode colors
+        light: {
+          50: '#fefefe',
+          100: '#fdfdfd',
+          200: '#fafafa',
+          300: '#f4f4f5',
+          400: '#e4e4e7',
+          500: '#d4d4d8',
+          600: '#a1a1aa',
+          700: '#71717a',
+          800: '#52525b',
+          900: '#27272a',
+        },
+        // Brand colors optimized for light mode
+        brand: {
+          primary: {
+            50: '#f0f4ff',
+            100: '#e0e7ff',
+            200: '#c7d2fe',
+            300: '#a5b4fc',
+            400: '#818cf8',
+            500: '#6366f1',
+            600: '#4f46e5',
+            700: '#4338ca',
+            800: '#3730a3',
+            900: '#312e81',
+          },
+          secondary: {
+            50: '#fdf4ff',
+            100: '#fae8ff',
+            200: '#f5d0fe',
+            300: '#f0abfc',
+            400: '#e879f9',
+            500: '#d946ef',
+            600: '#c026d3',
+            700: '#a21caf',
+            800: '#86198f',
+            900: '#701a75',
+          },
+        },
         accent: {
           purple: '#8b5cf6',
           pink: '#ec4899',
@@ -66,6 +106,10 @@ export default {
         'gradient-purple-pink': 'linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)',
         'gradient-dark': 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)',
         'gradient-main': 'linear-gradient(135deg, #0f172a 0%, #1e293b 25%, #334155 75%, #475569 100%)',
+        // Enhanced light mode gradients
+        'gradient-light': 'linear-gradient(135deg, #fafafa 0%, #f4f4f5 50%, #e4e4e7 100%)',
+        'gradient-light-brand': 'linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 50%, #c7d2fe 100%)',
+        'gradient-light-subtle': 'linear-gradient(135deg, #fefefe 0%, #fdfdfd 25%, #fafafa 75%, #f4f4f5 100%)',
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-out',

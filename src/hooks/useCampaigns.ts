@@ -49,6 +49,26 @@ export const useCampaigns = () => {
     }
   };
 
+  const runCampaign = async (id: string) => {
+    try {
+      const updatedCampaign = await campaignService.runCampaign(id);
+      setCampaigns(prev => prev.map(c => c.id === id ? updatedCampaign : c));
+      return updatedCampaign;
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  const stopCampaign = async (id: string) => {
+    try {
+      const updatedCampaign = await campaignService.stopCampaign(id);
+      setCampaigns(prev => prev.map(c => c.id === id ? updatedCampaign : c));
+      return updatedCampaign;
+    } catch (err) {
+      throw err;
+    }
+  };
+
   useEffect(() => {
     fetchCampaigns();
   }, []);
@@ -60,6 +80,8 @@ export const useCampaigns = () => {
     refetch: fetchCampaigns,
     createCampaign,
     updateCampaign,
-    deleteCampaign
+    deleteCampaign,
+    runCampaign,
+    stopCampaign
   };
 };

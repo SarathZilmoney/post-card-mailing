@@ -1,8 +1,10 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { Calendar, FileText, Upload, X, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Calendar, FileText, Upload, X, CheckCircle, AlertCircle, Loader2, Users, Tag } from 'lucide-react';
 import { useCampaigns } from '../../hooks/useCampaigns';
 import { useTheme } from '../../context/ThemeContext';
+import { categoryService } from '../../services/categoryService';
+import { AddressCategory } from '../../types';
 import toast from 'react-hot-toast';
 
 interface CampaignModalProps {
@@ -14,6 +16,8 @@ interface CreateCampaignFormData {
   name: string;
   description: string;
   startDate: string;
+  category: string;
+  targetAddressCount: number;
   postcardImage?: File;
 }
 
@@ -35,6 +39,8 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose }) =
   const [imageValidation, setImageValidation] = useState<ImageValidationResult | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [categories, setCategories] = useState<AddressCategory[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { createCampaign } = useCampaigns();
 
@@ -49,12 +55,39 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose }) =
     defaultValues: {
       name: '',
       description: '',
-      startDate: new Date().toISOString().split('T')[0]
+      startDate: new Date().toISOString().split('T')[0],
+      category: '',
+      targetAddressCount: 100
     }
   });
 
   const watchedName = watch('name');
   const watchedDescription = watch('description');
+  const watchedCategory = watch('category');
+  const watchedTargetAddressCount = watch('targetAddressCount');
+
+  // Load categories when modal opens
+  useEffect(() => {
+    if (open && categories.length === 0) {
+      loadCategories();
+    }
+  }, [open]);
+
+  const loadCategories = async () => {
+    setLoadingCategories(true);
+    try {
+      const categoriesData = await categoryService.getAddressCategories();
+      setCategories(categoriesData);
+    } catch (error) {
+      console.error('Failed to load categories:', error);
+      toast.error('Failed to load address categories');
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
+
+  const selectedCategory = categories.find(cat => cat.id === watchedCategory);
+  const maxAddressCount = selectedCategory ? selectedCategory.count : 1000;
 
   // --- Image Validation Logic ---
   const validateImage = useCallback((file: File): Promise<ImageValidationResult> => {
@@ -180,6 +213,8 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose }) =
       formData.append('name', data.name.trim());
       formData.append('description', data.description.trim());
       formData.append('startDate', data.startDate);
+      formData.append('category', data.category);
+      formData.append('targetAddressCount', data.targetAddressCount.toString());
       if (selectedImage) formData.append('postcardImage', selectedImage);
       await createCampaign(formData);
       toast.success('Campaign created!');
@@ -200,14 +235,15 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose }) =
   const { isDark } = useTheme();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+
+<div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className={`${
         isDark ? 'glass-dark' : 'glass bg-white/90'
       } rounded-2xl shadow-2xl w-full max-w-lg mx-4 relative animate-fadeIn border ${
         isDark ? 'border-white/10' : 'border-gray-200/50'
       }`}>
         {/* Header */}
-        <div className={`flex items-center justify-between px-6 py-5 border-b ${
+        <div className={`flex items-center justify-between px-6 py-4 border-b ${
           isDark ? 'border-white/10' : 'border-gray-200'
         }`}>
           <h2 className={`text-xl font-bold ${
@@ -219,18 +255,19 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose }) =
           </h2>
           <button 
             onClick={onClose} 
-            className={`p-2 rounded-lg ${
+            className={`p-2 rounded-full ${
               isDark 
-                ? 'hover:bg-white/10 text-gray-300 hover:text-white' 
-                : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
+                ? 'hover:bg-red-500/20 text-gray-400 hover:text-red-400 border border-gray-600 hover:border-red-500/50' 
+                : 'hover:bg-red-50 text-gray-500 hover:text-red-600 border border-gray-300 hover:border-red-300'
             } transition-all duration-300 group`}
+            title="Close"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
         
         {/* Form */}
-        <form onSubmit={handleSubmit(onSubmit)} className="px-6 py-5 space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="px-6 py-4 space-y-4">
           {/* Campaign Name */}
           <div>
             <label className={`block text-sm font-medium ${
@@ -317,6 +354,96 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose }) =
             {errors.startDate && <p className="text-xs text-red-400 mt-1">{errors.startDate.message}</p>}
           </div>
           
+          {/* Address Category */}
+          <div>
+            <label className={`block text-sm font-medium ${
+              isDark ? 'text-gray-200' : 'text-gray-700'
+            } mb-2`}>Address Category *</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Tag className={`h-4 w-4 ${
+                  isDark ? 'text-gray-400' : 'text-gray-500'
+                }`} />
+              </div>
+              <select
+                {...register('category', { 
+                  required: 'Please select an address category' 
+                })}
+                className={`block w-full pl-10 pr-12 py-3 ${
+                  isDark 
+                    ? 'bg-gray-800 border-gray-600 text-white [&>option]:bg-gray-800 [&>option]:text-white' 
+                    : 'bg-gray-50 border-gray-300 text-gray-900 [&>option]:bg-white [&>option]:text-gray-900'
+                } rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-300 ${
+                  isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+                }`}
+                style={isDark ? {
+                  colorScheme: 'dark'
+                } : {}}
+              >
+                <option value="">Select category...</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name} ({category.count} available)
+                  </option>
+                ))}
+              </select>
+              {loadingCategories && (
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                  <Loader2 className="h-4 w-4 animate-spin text-purple-400" />
+                </div>
+              )}
+            </div>
+            {errors.category && <p className="text-xs text-red-400 mt-1">{errors.category.message}</p>}
+            {selectedCategory && (
+              <p className={`text-xs ${
+                isDark ? 'text-gray-400' : 'text-gray-600'
+              } mt-1`}>
+                {selectedCategory.description}
+              </p>
+            )}
+          </div>
+          
+          {/* Target Address Count */}
+          <div>
+            <label className={`block text-sm font-medium ${
+              isDark ? 'text-gray-200' : 'text-gray-700'
+            } mb-2`}>Number of Addresses *</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Users className={`h-4 w-4 ${
+                  isDark ? 'text-gray-400' : 'text-gray-500'
+                }`} />
+              </div>
+              <input
+                {...register('targetAddressCount', { 
+                  required: 'Number of addresses is required',
+                  min: { value: 1, message: 'Must be at least 1' },
+                  max: { value: maxAddressCount, message: `Cannot exceed ${maxAddressCount} (available in selected category)` },
+                  valueAsNumber: true
+                })}
+                type="number"
+                min="1"
+                max={maxAddressCount}
+                className={`block w-full pl-10 pr-3 py-3 ${
+                  isDark 
+                    ? 'bg-white/5 border-white/10 text-white placeholder-gray-400' 
+                    : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'
+                } rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-300 ${
+                  isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100'
+                }`}
+                placeholder="Enter number of addresses"
+              />
+            </div>
+            {errors.targetAddressCount && <p className="text-xs text-red-400 mt-1">{errors.targetAddressCount.message}</p>}
+            {selectedCategory && (
+              <p className={`text-xs ${
+                isDark ? 'text-gray-400' : 'text-gray-600'
+              } mt-1`}>
+                Maximum available: {selectedCategory.count} addresses
+              </p>
+            )}
+          </div>
+          
           {/* File Upload */}
           <div>
             <label className={`block text-sm font-medium ${
@@ -324,7 +451,7 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose }) =
             } mb-2`}>Postcard Image (optional)</label>
             {!imagePreview ? (
               <div
-                className={`flex flex-col items-center justify-center border-2 border-dashed rounded-lg py-8 cursor-pointer transition-all duration-300 ${
+                className={`flex flex-col items-center justify-center border-2 border-dashed rounded-lg py-4 cursor-pointer transition-all duration-300 ${
                   dragActive 
                     ? 'border-purple-400 bg-purple-500/10' 
                     : isDark
@@ -341,17 +468,17 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose }) =
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') handleUploadClick(); }}
               >
                 {isProcessingImage ? (
-                  <Loader2 className="h-10 w-10 text-purple-400 animate-spin mb-3" />
+                  <Loader2 className="h-6 w-6 text-purple-400 animate-spin mb-2" />
                 ) : (
-                  <Upload className={`h-10 w-10 ${
+                  <Upload className={`h-6 w-6 ${
                     isDark ? 'text-gray-400' : 'text-gray-500'
-                  } mb-3`} />
+                  } mb-2`} />
                 )}
-                <span className="text-purple-400 font-medium">Click to Upload</span>
+                <span className="text-sm text-purple-400 font-medium">Click to Upload</span>
                 <span className={`text-xs ${
                   isDark ? 'text-gray-400' : 'text-gray-500'
                 } mt-1 text-center`}>
-                  or drag and drop<br/>JPG, PNG, GIF, WebP, BMP, TIFF (max 5MB)
+                  or drag and drop • JPG, PNG, GIF, WebP (max 5MB)
                 </span>
                 <input
                   ref={fileInputRef}
@@ -367,7 +494,7 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose }) =
                   <img 
                     src={imagePreview} 
                     alt="Preview" 
-                    className={`h-40 w-auto rounded-lg border ${
+                    className={`h-24 w-auto rounded-lg border ${
                       isDark ? 'border-white/10' : 'border-gray-200'
                     } object-contain shadow-lg`} 
                   />

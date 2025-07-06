@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
-import { Plus, Search, Filter, Eye, Edit, Trash2, Play, Pause, MoreHorizontal, Mail } from 'lucide-react';
+import { Plus, Search, Filter, Eye, Edit, Trash2, Play, Pause, MoreHorizontal, Mail, PlayCircle, Square } from 'lucide-react';
 import { useCampaigns } from '../hooks/useCampaigns';
 import { useTheme } from '../context/ThemeContext';
+import { useAlert } from '../context/AlertContext';
 import { formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
 import { CampaignModal } from '../components/Campaigns/CampaignModal';
 
 export const Campaigns: React.FC = () => {
-  const { campaigns, loading, deleteCampaign, updateCampaign } = useCampaigns();
+  const { campaigns, loading, deleteCampaign, updateCampaign, runCampaign, stopCampaign } = useCampaigns();
   const { isDark } = useTheme();
+  const alert = useAlert();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [modalOpen, setModalOpen] = useState(false);
@@ -20,15 +22,25 @@ export const Campaigns: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this campaign?')) {
-      try {
-        await deleteCampaign(id);
-        toast.success('Campaign deleted successfully');
-      } catch (error) {
-        toast.error('Failed to delete campaign');
+  const handleDelete = async (id: string, campaignName: string) => {
+    alert.showAlert({
+      type: 'warning',
+      title: 'Delete Campaign',
+      message: `Are you sure you want to delete "${campaignName}"? This action cannot be undone.`,
+      confirmText: 'Delete Campaign',
+      cancelText: 'Cancel',
+      onConfirm: async () => {
+        try {
+          await deleteCampaign(id);
+          toast.success('Campaign deleted successfully');
+        } catch (error) {
+          toast.error('Failed to delete campaign');
+        }
+      },
+      onCancel: () => {
+        // Do nothing on cancel
       }
-    }
+    });
   };
 
   const handleStatusToggle = async (id: string, currentStatus: string) => {
@@ -41,19 +53,64 @@ export const Campaigns: React.FC = () => {
     }
   };
 
+  const handleRunCampaign = async (id: string, campaignName: string) => {
+    alert.showAlert({
+      type: 'warning',
+      title: 'Start Campaign',
+      message: `Are you sure you want to run "${campaignName}"? This will start sending postcards to the selected addresses.`,
+      confirmText: 'Start Campaign',
+      cancelText: 'Cancel',
+      onConfirm: async () => {
+        try {
+          await runCampaign(id);
+          toast.success('Campaign started successfully!');
+        } catch (error) {
+          toast.error('Failed to start campaign');
+        }
+      },
+      onCancel: () => {
+        // Do nothing on cancel
+      }
+    });
+  };
+
+  const handleStopCampaign = async (id: string, campaignName: string) => {
+    alert.showAlert({
+      type: 'warning',
+      title: 'Stop Campaign',
+      message: `Are you sure you want to stop "${campaignName}"? This will pause the campaign.`,
+      confirmText: 'Stop Campaign',
+      cancelText: 'Cancel',
+      onConfirm: async () => {
+        try {
+          await stopCampaign(id);
+          toast.success('Campaign stopped successfully!');
+        } catch (error) {
+          toast.error('Failed to stop campaign');
+        }
+      },
+      onCancel: () => {
+        // Do nothing on cancel
+      }
+    });
+  };
+
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'bg-blue-500/20 text-blue-300 border-blue-400/30';
-      case 'completed':
-        return 'bg-green-500/20 text-green-300 border-green-400/30';
-      case 'draft':
-        return 'bg-gray-500/20 text-gray-300 border-gray-400/30';
-      case 'paused':
-        return 'bg-yellow-500/20 text-yellow-300 border-yellow-400/30';
-      default:
-        return 'bg-gray-500/20 text-gray-300 border-gray-400/30';
-    }
+    const colors = {
+      active: isDark 
+        ? 'bg-blue-500/20 text-blue-300 border-blue-400/30' 
+        : 'bg-blue-100/80 text-blue-700 border-blue-200',
+      completed: isDark 
+        ? 'bg-green-500/20 text-green-300 border-green-400/30' 
+        : 'bg-green-100/80 text-green-700 border-green-200',
+      draft: isDark 
+        ? 'bg-gray-500/20 text-gray-300 border-gray-400/30' 
+        : 'bg-light-200/80 text-light-700 border-light-300',
+      paused: isDark 
+        ? 'bg-yellow-500/20 text-yellow-300 border-yellow-400/30' 
+        : 'bg-yellow-100/80 text-yellow-700 border-yellow-200',
+    } as const;
+    return colors[status as keyof typeof colors] || colors.draft;
   };
 
   const getStatusText = (status: string) => {
@@ -76,21 +133,21 @@ export const Campaigns: React.FC = () => {
       <div className="space-y-6 animate-fadeIn">
         <div className="animate-pulse">
           <div className={`h-8 ${
-            isDark ? 'bg-dark-600' : 'bg-gray-300'
+            isDark ? 'bg-dark-600' : 'bg-light-300'
           } rounded w-1/4 mb-6`}></div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => (
               <div key={i} className={`${
-                isDark ? 'glass-dark' : 'glass bg-white/70 border-gray-200/50'
+                isDark ? 'glass-dark' : 'glass-light'
               } rounded-2xl p-6`}>
                 <div className={`h-6 ${
-                  isDark ? 'bg-dark-600' : 'bg-gray-300'
+                  isDark ? 'bg-dark-600' : 'bg-light-300'
                 } rounded mb-3`}></div>
                 <div className={`h-4 ${
-                  isDark ? 'bg-dark-600' : 'bg-gray-300'
+                  isDark ? 'bg-dark-600' : 'bg-light-300'
                 } rounded mb-2`}></div>
                 <div className={`h-4 ${
-                  isDark ? 'bg-dark-600' : 'bg-gray-300'
+                  isDark ? 'bg-dark-600' : 'bg-light-300'
                 } rounded w-3/4`}></div>
               </div>
             ))}
@@ -101,71 +158,82 @@ export const Campaigns: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 animate-fadeIn">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <div className="relative">
-            <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${
-              isDark ? 'text-gray-400' : 'text-gray-500'
-            } h-4 w-4`} />
-            <input
-              type="text"
-              placeholder="Search Campaigns"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className={`pl-10 pr-4 py-2 ${
-                isDark 
-                  ? 'bg-dark-800/50 border-dark-600 text-white placeholder-gray-500' 
-                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
-              } rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 w-80 transition-all duration-200`}
-            />
-          </div>
-          <div className="flex items-center space-x-2">
-            <Filter className={`h-4 w-4 ${
-              isDark ? 'text-gray-400' : 'text-gray-500'
-            }`} />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className={`${
-                isDark 
-                  ? 'bg-dark-800/50 border-dark-600 text-white' 
-                  : 'bg-white border-gray-300 text-gray-900'
-              } rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200`}
-            >
-              <option value="all">All Status</option>
-              <option value="draft">Draft</option>
-              <option value="active">Active</option>
-              <option value="paused">Paused</option>
-              <option value="completed">Completed</option>
-            </select>
-          </div>
+    <div className="space-y-8">
+      {/* Page Header */}
+      <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+        <div>
+          <h1 className={`text-3xl font-bold ${
+            isDark ? 'text-white' : 'text-gray-900'
+          }`}>
+            Campaigns
+          </h1>
+          <p className={`mt-1 text-sm ${
+            isDark ? 'text-gray-400' : 'text-gray-600'
+          }`}>
+            {filteredCampaigns.length} campaign{filteredCampaigns.length !== 1 ? 's' : ''} found
+          </p>
         </div>
+        
         <button
           onClick={() => setModalOpen(true)}
-          className="btn-gradient px-4 py-2 rounded-lg flex items-center space-x-2 font-medium text-white transition-all duration-200"
+          className={`${
+            isDark 
+              ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700' 
+              : 'bg-gradient-to-r from-brand-primary-600 to-brand-secondary-600 hover:from-brand-primary-700 hover:to-brand-secondary-700'
+          } text-white px-6 py-3 rounded-lg flex items-center space-x-2 font-medium transition-all duration-200 shadow-lg hover:shadow-xl`}
         >
-          <Plus className="h-4 w-4" />
-          <span>Create +</span>
+          <Plus className="h-5 w-5" />
+          <span>Create Campaign</span>
         </button>
       </div>
 
-      {/* Campaign Count */}
-      <div>
-        <h1 className={`text-2xl font-bold ${
-          isDark ? 'text-white' : 'text-gray-900'
-        }`}>
-          {filteredCampaigns.length} Campaign{filteredCampaigns.length !== 1 ? 's' : ''}
-        </h1>
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${
+            isDark ? 'text-gray-400' : 'text-gray-500'
+          } h-5 w-5`} />
+          <input
+            type="text"
+            placeholder="Search campaigns..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className={`w-full pl-10 pr-4 py-3 ${
+              isDark 
+                ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-400' 
+                : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+            } rounded-lg focus:ring-2 focus:ring-brand-primary-500 focus:border-brand-primary-500 transition-all duration-200`}
+          />
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          <Filter className={`h-5 w-5 ${
+            isDark ? 'text-gray-400' : 'text-gray-500'
+          }`} />
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className={`${
+              isDark 
+                ? 'bg-gray-800 border-gray-700 text-white' 
+                : 'bg-white border-gray-300 text-gray-900'
+            } rounded-lg px-4 py-3 focus:ring-2 focus:ring-brand-primary-500 focus:border-brand-primary-500 transition-all duration-200`}
+          >
+            <option value="all">All Status</option>
+            <option value="draft">Draft</option>
+            <option value="active">Active</option>
+            <option value="paused">Paused</option>
+            <option value="completed">Completed</option>
+          </select>
+        </div>
       </div>
 
       {/* Campaign Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {filteredCampaigns.map((campaign) => (
           <div key={campaign.id} className={`${
-            isDark ? 'glass-dark' : 'glass bg-white/70 border-gray-200/50'
-          } rounded-2xl p-6 hover:border-purple-500/30 transition-all duration-300 group animate-slideUp`}>
+            isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+          } border rounded-xl p-6 hover:shadow-lg transition-all duration-300 group`}>
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
                 <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(campaign.status)}`}>
@@ -173,21 +241,51 @@ export const Campaigns: React.FC = () => {
                 </span>
               </div>
               <div className="flex items-center space-x-1">
+                {/* Run/Stop Campaign Button */}
+                {campaign.status === 'draft' || campaign.status === 'paused' ? (
+                  <button
+                    onClick={() => handleRunCampaign(campaign.id, campaign.name)}
+                    className={`p-1 ${
+                      isDark 
+                        ? 'text-green-400 hover:text-green-300 hover:bg-green-500/10' 
+                        : 'text-green-600 hover:text-green-700 hover:bg-green-100'
+                    } rounded transition-colors`}
+                    title="Run Campaign"
+                  >
+                    <PlayCircle className="h-4 w-4" />
+                  </button>
+                ) : campaign.status === 'active' ? (
+                  <button
+                    onClick={() => handleStopCampaign(campaign.id, campaign.name)}
+                    className={`p-1 ${
+                      isDark 
+                        ? 'text-red-400 hover:text-red-300 hover:bg-red-500/10' 
+                        : 'text-red-600 hover:text-red-700 hover:bg-red-100'
+                    } rounded transition-colors`}
+                    title="Stop Campaign"
+                  >
+                    <Square className="h-4 w-4" />
+                  </button>
+                ) : null}
+                
+                {/* View Details Button */}
                 <button
                   className={`p-1 ${
                     isDark 
                       ? 'text-gray-400 hover:text-purple-400 hover:bg-dark-800/50' 
-                      : 'text-gray-500 hover:text-purple-500 hover:bg-gray-100'
+                      : 'text-light-600 hover:text-brand-primary-600 hover:bg-light-200/60'
                   } rounded transition-colors`}
                   title="View Details"
                 >
                   <Eye className="h-4 w-4" />
                 </button>
+                
+                {/* More Options Button */}
                 <button
                   className={`p-1 ${
                     isDark 
                       ? 'text-gray-400 hover:text-purple-400 hover:bg-dark-800/50' 
-                      : 'text-gray-500 hover:text-purple-500 hover:bg-gray-100'
+                      : 'text-light-600 hover:text-brand-primary-600 hover:bg-light-200/60'
                   } rounded transition-colors`}
                   title="More Options"
                 >
@@ -214,52 +312,42 @@ export const Campaigns: React.FC = () => {
               </p>
             </div>
 
-            <div className="mb-4">
-              <div className={`text-sm ${
-                isDark ? 'text-gray-300' : 'text-gray-700'
-              } mb-1`}>
-                <span className="font-medium">LIST</span>
-              </div>
-              <div className={`text-sm ${
-                isDark ? 'text-gray-400' : 'text-gray-600'
-              }`}>
-                {campaign.addressCount} addresses
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <div className={`text-sm ${
-                isDark ? 'text-gray-300' : 'text-gray-700'
-              } mb-1`}>
-                <span className="font-medium">KEYWORDS</span>
-              </div>
-              <div className="flex flex-wrap gap-1">
-                <span className="px-2 py-1 bg-purple-500/20 text-purple-300 rounded text-xs border border-purple-400/30">
-                  POSTCARD
-                </span>
-                <span className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded text-xs border border-blue-400/30">
-                  MAIL
-                </span>
-              </div>
-            </div>
-
-            <div className={`flex justify-between items-center text-sm ${
-              isDark ? 'text-gray-400' : 'text-gray-600'
-            }`}>
+            <div className="grid grid-cols-3 gap-4 text-center">
               <div>
-                <span className={`font-medium ${
+                <div className={`text-lg font-semibold ${
                   isDark ? 'text-white' : 'text-gray-900'
-                }`}>{campaign.sentCount}</span> sent
+                }`}>
+                  {campaign.addressCount || 0}
+                </div>
+                <div className={`text-xs ${
+                  isDark ? 'text-gray-400' : 'text-gray-600'
+                }`}>
+                  Addresses
+                </div>
               </div>
               <div>
-                <span className={`font-medium ${
+                <div className={`text-lg font-semibold ${
                   isDark ? 'text-white' : 'text-gray-900'
-                }`}>{campaign.deliveredCount}</span> delivered
+                }`}>
+                  {campaign.sentCount || 0}
+                </div>
+                <div className={`text-xs ${
+                  isDark ? 'text-gray-400' : 'text-gray-600'
+                }`}>
+                  Sent
+                </div>
               </div>
               <div>
-                <span className={`font-medium ${
+                <div className={`text-lg font-semibold ${
                   isDark ? 'text-white' : 'text-gray-900'
-                }`}>${campaign.cost.toFixed(2)}</span> cost
+                }`}>
+                  ${campaign.cost || 0}
+                </div>
+                <div className={`text-xs ${
+                  isDark ? 'text-gray-400' : 'text-gray-600'
+                }`}>
+                  Cost
+                </div>
               </div>
             </div>
           </div>
