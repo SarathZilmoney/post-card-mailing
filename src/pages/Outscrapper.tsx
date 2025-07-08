@@ -6,6 +6,7 @@ import { US_STATES, BUSINESS_TYPES, BUSINESS_TYPE_LABELS } from '../config/const
 import { formatDistanceToNow } from 'date-fns';
 import { alertService } from '../services/alertService';
 import { useTheme } from '../context/ThemeContext';
+import { SearchableDropdown } from '../components/UI';
 
 export const Outscrapper: React.FC = () => {
   const { isDark } = useTheme();
@@ -232,25 +233,13 @@ export const Outscrapper: React.FC = () => {
 
             {/* State */}
             <div>
-              <label className={`block text-sm font-medium ${
-                isDark ? 'text-gray-300' : 'text-light-700'
-              } mb-2`}>
-                State
-              </label>
-              <select
-                value={filters.state}
-                onChange={(e) => setFilters({ ...filters, state: e.target.value })}
-                className={`block w-full px-3 py-2 ${
-                  isDark ? 'bg-dark-800/50 border-dark-600 text-white' : 'bg-light-100/70 border-light-300 text-light-900'
-                } rounded-lg text-sm focus:ring-2 ${
-                  isDark ? 'focus:ring-purple-500 focus:border-purple-500' : 'focus:ring-brand-primary-500 focus:border-brand-primary-500'
-                } transition-all duration-200`}
-              >
-                <option value="">Select State</option>
-                {US_STATES.map(state => (
-                  <option key={state} value={state}>{state}</option>
-                ))}
-              </select>
+              <SearchableDropdown
+                value={filters.state || ''}
+                onChange={(value) => setFilters({ ...filters, state: value })}
+                options={US_STATES}
+                placeholder="Select State"
+                label="State"
+              />
             </div>
 
             {/* ZIP Code */}
@@ -278,27 +267,14 @@ export const Outscrapper: React.FC = () => {
 
             {/* Category (formerly Business Type) */}
             <div>
-              <label className={`block text-sm font-medium ${
-                isDark ? 'text-gray-300' : 'text-light-700'
-              } mb-2`}>
-                Category
-              </label>
-              <select
-                value={filters.businessType}
-                onChange={(e) => setFilters({ ...filters, businessType: e.target.value })}
-                className={`block w-full px-3 py-2 ${
-                  isDark ? 'bg-dark-800/50 border-dark-600 text-white' : 'bg-light-100/70 border-light-300 text-light-900'
-                } rounded-lg text-sm focus:ring-2 ${
-                  isDark ? 'focus:ring-purple-500 focus:border-purple-500' : 'focus:ring-brand-primary-500 focus:border-brand-primary-500'
-                } transition-all duration-200`}
-              >
-                <option value="">Select Category</option>
-                {BUSINESS_TYPES.map(type => (
-                  <option key={type} value={type}>
-                    {BUSINESS_TYPE_LABELS[type as keyof typeof BUSINESS_TYPE_LABELS]}
-                  </option>
-                ))}
-              </select>
+              <SearchableDropdown
+                value={filters.businessType || ''}
+                onChange={(value) => setFilters({ ...filters, businessType: value })}
+                options={BUSINESS_TYPES}
+                placeholder="Select Category"
+                label="Category"
+                getDisplayValue={(type) => BUSINESS_TYPE_LABELS[type as keyof typeof BUSINESS_TYPE_LABELS]}
+              />
             </div>
 
             {/* Limit */}

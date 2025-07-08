@@ -1,100 +1,46 @@
-import { AddressCategory } from '../types';
+import { AddressCategory, AddressCategoriesResponse } from '../types';
 import { httpService } from './httpService';
 
 class CategoryService {
   async getAddressCategories(): Promise<AddressCategory[]> {
     try {
-      // Try to make actual API call to backend
-      const data = await httpService.get('/address-categories');
-      return data;
+      // Call the real backend API endpoint
+      const response: AddressCategoriesResponse = await httpService.get('/sua/postal-cards/categories');
+      
+      // Handle the new response format
+      if (response.status === 'success' && Array.isArray(response.data)) {
+        console.log(`Fetched ${response.total_categories} address categories`);
+        return response.data;
+      } else {
+        console.log('Invalid response format or no categories:', response);
+        return [];
+      }
     } catch (error) {
-      console.log('Address categories API call failed, using mock data:', error);
-      return this.getMockCategories();
+      console.error('Failed to fetch address categories:', error);
+      // Return empty array instead of mock data
+      return [];
     }
   }
 
-  private getMockCategories(): AddressCategory[] {
-    // Mock categories data
-    return [
-      {
-        id: 'restaurants',
-        name: 'Restaurants',
-        description: 'Restaurants and food establishments',
-        count: 1250
-      },
-      {
-        id: 'retail',
-        name: 'Retail Stores',
-        description: 'Retail and shopping establishments',
-        count: 890
-      },
-      {
-        id: 'healthcare',
-        name: 'Healthcare',
-        description: 'Medical facilities and healthcare providers',
-        count: 550
-      },
-      {
-        id: 'real_estate',
-        name: 'Real Estate',
-        description: 'Real estate agencies and property management',
-        count: 340
-      },
-      {
-        id: 'automotive',
-        name: 'Automotive',
-        description: 'Car dealerships and automotive services',
-        count: 280
-      },
-      {
-        id: 'professional_services',
-        name: 'Professional Services',
-        description: 'Law firms, accounting, consulting services',
-        count: 420
-      },
-      {
-        id: 'beauty',
-        name: 'Beauty & Wellness',
-        description: 'Salons, spas, and wellness centers',
-        count: 310
-      },
-      {
-        id: 'education',
-        name: 'Education',
-        description: 'Schools, training centers, and educational services',
-        count: 180
-      },
-      {
-        id: 'technology',
-        name: 'Technology',
-        description: 'IT services and technology companies',
-        count: 220
-      },
-      {
-        id: 'construction',
-        name: 'Construction',
-        description: 'Construction and contracting services',
-        count: 190
-      },
-      {
-        id: 'finance',
-        name: 'Finance',
-        description: 'Banks, credit unions, and financial services',
-        count: 150
-      },
-      {
-        id: 'entertainment',
-        name: 'Entertainment',
-        description: 'Entertainment venues and services',
-        count: 95
-      },
-      {
-        id: 'other',
-        name: 'Other',
-        description: 'Other business categories',
-        count: 320
+  async getAddressCategoriesWithCount(): Promise<{ categories: AddressCategory[]; totalCount: number }> {
+    try {
+      // Call the real backend API endpoint
+      const response: AddressCategoriesResponse = await httpService.get('/sua/postal-cards/categories');
+      
+      // Handle the new response format
+      if (response.status === 'success' && Array.isArray(response.data)) {
+        return {
+          categories: response.data,
+          totalCount: response.total_categories
+        };
+      } else {
+        console.log('Invalid response format or no categories:', response);
+        return { categories: [], totalCount: 0 };
       }
-    ];
+    } catch (error) {
+      console.error('Failed to fetch address categories:', error);
+      return { categories: [], totalCount: 0 };
+    }
   }
 }
 

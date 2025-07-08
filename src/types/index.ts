@@ -130,8 +130,13 @@ export interface AlertContextType {
 }
 
 export interface AddressCategory {
-  id: string;
+  id: number;
   name: string;
-  description?: string;
-  count: number;
+  address_count: number;
+}
+
+export interface AddressCategoriesResponse {
+  status: string;
+  data: AddressCategory[];
+  total_categories: number;
 }
