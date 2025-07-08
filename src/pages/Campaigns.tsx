@@ -78,10 +78,32 @@ export const Campaigns: React.FC = () => {
       cancelText: 'Cancel',
       onConfirm: async () => {
         try {
-          await runCampaign(id);
-          toast.success('Campaign started successfully!');
-        } catch (error) {
-          toast.error('Failed to start campaign');
+          const response = await runCampaign(id);
+          
+          if (response.success) {
+            const successMessage = response.message || 'Campaign started successfully!';
+            
+            // Show both toast and success alert
+            toast.success(successMessage);
+            alert.success(successMessage, {
+              title: 'Campaign Started',
+              duration: 4000
+            });
+          } else {
+            const errorMessage = response.message || 'Failed to start campaign';
+            toast.error(errorMessage);
+            alert.error(errorMessage, {
+              title: 'Campaign Start Failed',
+              duration: 5000
+            });
+          }
+        } catch (error: any) {
+          const errorMessage = error?.message || 'Failed to start campaign';
+          toast.error(errorMessage);
+          alert.error(errorMessage, {
+            title: 'Campaign Start Failed',
+            duration: 5000
+          });
         }
       },
       onCancel: () => {
