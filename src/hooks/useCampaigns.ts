@@ -67,11 +67,19 @@ export const useCampaigns = () => {
     }
   };
 
-  const runCampaign = async (id: string) => {
+  const runCampaign = async (id: string): Promise<{success: boolean, message: string, campaign?: Campaign}> => {
     try {
-      const updatedCampaign = await campaignService.runCampaign(id);
-      setCampaigns(prev => prev.map(c => c.id === id ? updatedCampaign : c));
-      return updatedCampaign;
+      const response = await campaignService.runCampaign(id);
+      
+      // If the campaign object is returned, update the local state
+      if (response.campaign) {
+        setCampaigns(prev => prev.map(c => c.id === id ? response.campaign! : c));
+      } else {
+        // If no campaign object is returned, just refetch the campaigns to get the updated status
+        await fetchCampaigns(false);
+      }
+      
+      return response;
     } catch (err) {
       throw err;
     }

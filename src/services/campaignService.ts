@@ -250,13 +250,54 @@ class CampaignService {
     }
   }
 
-  async runCampaign(id: string): Promise<Campaign> {
+  async runCampaign(id: string): Promise<{success: boolean, message: string, campaign?: Campaign}> {
     try {
-      // Make actual API call to backend
-      const data = await httpService.post(`/campaigns/${id}/run`);
-      return data;
+      // Validate required fields
+      if (!id) {
+        throw new Error('Campaign ID is required');
+      }
+      
+      // Prepare the payload for the backend API
+      const payload = {
+        campaign_id: id
+      };
+      
+      // Debug log the payload
+      console.log('Run campaign payload being sent:', payload);
+      
+      // Make API call to the correct endpoint
+      const response = await httpService.post('/sua/sent-postal-cards', payload);
+      
+      // Handle the response format
+      if (response.success) {
+        return {
+          success: true,
+          message: response.message || 'Campaign started successfully!',
+          campaign: response.campaign || undefined
+        };
+      } else {
+        console.log('Campaign run failed:', response);
+        throw new Error(response.message || 'Failed to start campaign');
+      }
     } catch (error) {
       console.log('Run campaign API call failed:', error);
+      
+      // Enhanced error handling for different response codes
+      if (error instanceof Error) {
+        if (error.message.includes('422') || error.message.includes('Unprocessable')) {
+          throw new Error('Invalid campaign data. Please check the campaign configuration and try again.');
+        }
+        if (error.message.includes('404')) {
+          throw new Error('Campaign not found. Please refresh the page and try again.');
+        }
+        if (error.message.includes('400')) {
+          throw new Error('Campaign cannot be started. Please check if the campaign is properly configured.');
+        }
+        if (error.message.includes('500')) {
+          throw new Error('Server error occurred while starting the campaign. Please try again later.');
+        }
+      }
+      
       throw error;
     }
   }
