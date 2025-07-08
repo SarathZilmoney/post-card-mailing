@@ -3,6 +3,7 @@ import { Plus, Search, Filter, Eye, Edit, Trash2, Play, Pause, MoreHorizontal, M
 import { useCampaigns } from '../hooks/useCampaigns';
 import { useTheme } from '../context/ThemeContext';
 import { useAlert } from '../context/AlertContext';
+import { Campaign } from '../types';
 import { formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
 import { CampaignModal } from '../components/Campaigns/CampaignModal';
@@ -14,6 +15,9 @@ export const Campaigns: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
+
+
 
   const filteredCampaigns = campaigns.filter(campaign => {
     const matchesSearch = campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -31,10 +35,22 @@ export const Campaigns: React.FC = () => {
       cancelText: 'Cancel',
       onConfirm: async () => {
         try {
-          await deleteCampaign(id);
-          toast.success('Campaign deleted successfully');
-        } catch (error) {
-          toast.error('Failed to delete campaign');
+          const response = await deleteCampaign(id);
+          const successMessage = response.message || 'Campaign deleted successfully';
+          
+          // Show both toast and success alert
+          toast.success(successMessage);
+          alert.success(successMessage, {
+            title: 'Campaign Deleted',
+            duration: 4000
+          });
+        } catch (error: any) {
+          const errorMessage = error?.message || 'Failed to delete campaign';
+          toast.error(errorMessage);
+          alert.error(errorMessage, {
+            title: 'Delete Failed',
+            duration: 5000
+          });
         }
       },
       onCancel: () => {
@@ -93,6 +109,16 @@ export const Campaigns: React.FC = () => {
         // Do nothing on cancel
       }
     });
+  };
+
+  const handleEditCampaign = (campaign: Campaign) => {
+    setEditingCampaign(campaign);
+    setModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setModalOpen(false);
+    setEditingCampaign(null);
   };
 
   const getStatusColor = (status: string) => {
@@ -240,34 +266,7 @@ export const Campaigns: React.FC = () => {
                   {getStatusText(campaign.status)}
                 </span>
               </div>
-              <div className="flex items-center space-x-1">
-                {/* Run/Stop Campaign Button */}
-                {campaign.status === 'draft' || campaign.status === 'paused' ? (
-                  <button
-                    onClick={() => handleRunCampaign(campaign.id, campaign.name)}
-                    className={`p-1 ${
-                      isDark 
-                        ? 'text-green-400 hover:text-green-300 hover:bg-green-500/10' 
-                        : 'text-green-600 hover:text-green-700 hover:bg-green-100'
-                    } rounded transition-colors`}
-                    title="Run Campaign"
-                  >
-                    <PlayCircle className="h-4 w-4" />
-                  </button>
-                ) : campaign.status === 'active' ? (
-                  <button
-                    onClick={() => handleStopCampaign(campaign.id, campaign.name)}
-                    className={`p-1 ${
-                      isDark 
-                        ? 'text-red-400 hover:text-red-300 hover:bg-red-500/10' 
-                        : 'text-red-600 hover:text-red-700 hover:bg-red-100'
-                    } rounded transition-colors`}
-                    title="Stop Campaign"
-                  >
-                    <Square className="h-4 w-4" />
-                  </button>
-                ) : null}
-                
+              <div className="flex items-center space-x-2">
                 {/* View Details Button */}
                 <button
                   className={`p-1 ${
@@ -278,6 +277,32 @@ export const Campaigns: React.FC = () => {
                   title="View Details"
                 >
                   <Eye className="h-4 w-4" />
+                </button>
+                
+                {/* Edit Button */}
+                <button
+                  onClick={() => handleEditCampaign(campaign)}
+                  className={`p-1 ${
+                    isDark 
+                      ? 'text-gray-400 hover:text-blue-400 hover:bg-dark-800/50' 
+                      : 'text-light-600 hover:text-blue-600 hover:bg-light-200/60'
+                  } rounded transition-colors`}
+                  title="Edit Campaign"
+                >
+                  <Edit className="h-4 w-4" />
+                </button>
+                
+                {/* Delete Button */}
+                <button
+                  onClick={() => handleDelete(campaign.id, campaign.name)}
+                  className={`p-1 ${
+                    isDark 
+                      ? 'text-gray-400 hover:text-red-400 hover:bg-dark-800/50' 
+                      : 'text-light-600 hover:text-red-600 hover:bg-light-200/60'
+                  } rounded transition-colors`}
+                  title="Delete Campaign"
+                >
+                  <Trash2 className="h-4 w-4" />
                 </button>
                 
                 {/* More Options Button */}
@@ -312,7 +337,7 @@ export const Campaigns: React.FC = () => {
               </p>
             </div>
 
-            <div className="grid grid-cols-3 gap-4 text-center">
+            <div className="grid grid-cols-3 gap-4 text-center mb-4">
               <div>
                 <div className={`text-lg font-semibold ${
                   isDark ? 'text-white' : 'text-gray-900'
@@ -350,6 +375,60 @@ export const Campaigns: React.FC = () => {
                 </div>
               </div>
             </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              {campaign.status === 'draft' || campaign.status === 'paused' ? (
+                (() => {
+                  // Check if start date is in the future to determine button type
+                  // Future date = "Start Early" (blue), Current/Past date = "Run Campaign" (green)
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const startDate = campaign.scheduledDate ? new Date(campaign.scheduledDate) : today;
+                  const isFutureDate = startDate > today;
+                  
+                  return (
+                    <button
+                      onClick={() => handleRunCampaign(campaign.id, campaign.name)}
+                      className={`flex-1 flex items-center justify-center px-4 py-2.5 rounded-lg font-medium transition-all duration-200 shadow-sm ${
+                        isFutureDate
+                          ? isDark
+                            ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-blue-500/20 hover:shadow-blue-500/30'
+                            : 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white shadow-blue-500/20 hover:shadow-blue-500/30'
+                          : isDark
+                            ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-green-500/20 hover:shadow-green-500/30'
+                            : 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-green-500/20 hover:shadow-green-500/30'
+                      } hover:shadow-lg transform hover:scale-105`}
+                    >
+                      <PlayCircle className="h-5 w-5 mr-2" />
+                      <span className="text-sm font-semibold">
+                        {isFutureDate ? 'Start Early' : 'Run Campaign'}
+                      </span>
+                    </button>
+                  );
+                })()
+              ) : campaign.status === 'active' ? (
+                <button
+                  onClick={() => handleStopCampaign(campaign.id, campaign.name)}
+                  className={`flex-1 flex items-center justify-center px-4 py-2.5 rounded-lg font-medium transition-all duration-200 shadow-sm ${
+                    isDark
+                      ? 'bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white shadow-red-500/20 hover:shadow-red-500/30'
+                      : 'bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white shadow-red-500/20 hover:shadow-red-500/30'
+                  } hover:shadow-lg transform hover:scale-105`}
+                >
+                                    <Square className="h-5 w-5 mr-2" />
+                  <span className="text-sm font-semibold">Stop Campaign</span>
+                </button>
+              ) : campaign.status === 'completed' ? (
+                <div className={`flex-1 flex items-center justify-center px-4 py-2.5 rounded-lg ${
+                  isDark
+                    ? 'bg-gray-700/50 text-gray-400 border border-gray-600'
+                    : 'bg-gray-100 text-gray-500 border border-gray-200'
+                }`}>
+                  <span className="text-sm font-medium">Campaign Completed</span>
+                </div>
+              ) : null}
+            </div>
           </div>
         ))}
       </div>
@@ -382,7 +461,11 @@ export const Campaigns: React.FC = () => {
         </div>
       )}
 
-      <CampaignModal open={modalOpen} onClose={() => setModalOpen(false)} />
+      <CampaignModal 
+        open={modalOpen} 
+        onClose={handleModalClose} 
+        editCampaign={editingCampaign || undefined} 
+      />
     </div>
   );
 };

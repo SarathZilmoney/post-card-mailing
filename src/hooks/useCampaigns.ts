@@ -7,24 +7,40 @@ export const useCampaigns = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchCampaigns = async () => {
+  const fetchCampaigns = async (showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading) {
+        setLoading(true);
+      }
       const data = await campaignService.getCampaigns();
       setCampaigns(data);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch campaigns');
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
   };
 
-  const createCampaign = async (campaignData: Partial<Campaign> | FormData) => {
+  const createCampaign = async (campaignData: Partial<Campaign> | FormData): Promise<{success: boolean, message: string}> => {
     try {
-      const newCampaign = await campaignService.createCampaign(campaignData);
-      setCampaigns(prev => [newCampaign, ...prev]);
-      return newCampaign;
+      const response = await campaignService.createCampaign(campaignData);
+      // Backend doesn't return campaign data, just success confirmation
+      // The campaigns list will be updated via refetch
+      return response;
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  const editCampaign = async (campaignData: FormData): Promise<{success: boolean, message: string}> => {
+    try {
+      const response = await campaignService.editCampaign(campaignData);
+      // Backend doesn't return campaign data, just success confirmation
+      // The campaigns list will be updated via refetch
+      return response;
     } catch (err) {
       throw err;
     }
@@ -40,10 +56,12 @@ export const useCampaigns = () => {
     }
   };
 
-  const deleteCampaign = async (id: string) => {
+  const deleteCampaign = async (id: string): Promise<{success: boolean, message: string}> => {
     try {
-      await campaignService.deleteCampaign(id);
+      const response = await campaignService.deleteCampaign(id);
+      // Remove the campaign from the local state only after successful deletion
       setCampaigns(prev => prev.filter(c => c.id !== id));
+      return response;
     } catch (err) {
       throw err;
     }
@@ -77,8 +95,9 @@ export const useCampaigns = () => {
     campaigns,
     loading,
     error,
-    refetch: fetchCampaigns,
+    refetch: (showLoading = true) => fetchCampaigns(showLoading),
     createCampaign,
+    editCampaign,
     updateCampaign,
     deleteCampaign,
     runCampaign,

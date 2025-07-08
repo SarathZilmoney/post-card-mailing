@@ -152,7 +152,7 @@ const AlertModal: React.FC<AlertModalProps> = ({ alert }) => {
   if (!alert.isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className={`${
         isDark ? 'glass-dark' : 'glass bg-white/90'
       } rounded-2xl shadow-2xl w-full max-w-md mx-4 relative animate-fadeIn border ${
