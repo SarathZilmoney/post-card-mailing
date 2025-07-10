@@ -9,7 +9,7 @@ import toast from 'react-hot-toast';
 import { CampaignModal } from '../components/Campaigns/CampaignModal';
 
 export const Campaigns: React.FC = () => {
-  const { campaigns, loading, deleteCampaign, updateCampaign, runCampaign, stopCampaign } = useCampaigns();
+  const { campaigns, loading, deleteCampaign, updateCampaign, runCampaign, stopCampaign, refetch } = useCampaigns();
   const { isDark } = useTheme();
   const alert = useAlert();
   const [searchTerm, setSearchTerm] = useState('');
@@ -141,6 +141,19 @@ export const Campaigns: React.FC = () => {
   const handleModalClose = () => {
     setModalOpen(false);
     setEditingCampaign(null);
+  };
+
+  const handleCampaignCreated = async () => {
+    // This callback will be called by the modal after successful campaign creation
+    try {
+      await refetch(true);
+    } catch (error) {
+      console.error('Failed to refresh campaigns after creation:', error);
+      alert.warning('Campaign was created successfully, but failed to refresh the list. Please refresh the page to see the new campaign.', {
+        title: 'Refresh Failed',
+        duration: 6000
+      });
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -486,7 +499,8 @@ export const Campaigns: React.FC = () => {
       <CampaignModal 
         open={modalOpen} 
         onClose={handleModalClose} 
-        editCampaign={editingCampaign || undefined} 
+        editCampaign={editingCampaign || undefined}
+        onCampaignCreated={handleCampaignCreated}
       />
     </div>
   );

@@ -29,6 +29,17 @@ import { alertService } from './services/alertService';
 // Success alert (auto-closes after 3 seconds)
 alertService.success('Operation completed successfully!');
 
+// Success alert with callback executed when alert is closed
+alertService.success('Campaign created successfully!', {
+  title: 'Success',
+  duration: 4000,
+  onClose: () => {
+    // This runs when the alert is closed (auto-closed or manually dismissed)
+    console.log('Alert closed, refreshing data...');
+    // Refresh data, navigate, or perform other actions here
+  }
+});
+
 // Error alert (auto-closes after 3 seconds)
 alertService.error('Something went wrong. Please try again.');
 
@@ -172,6 +183,7 @@ interface AlertOptions {
   duration?: number; // in milliseconds, 0 means no auto-close
   onConfirm?: () => void | Promise<void>;
   onCancel?: () => void | Promise<void>;
+  onClose?: () => void | Promise<void>; // Called when alert is closed/dismissed
   confirmText?: string;
   cancelText?: string;
   icon?: React.ReactNode;
@@ -197,4 +209,5 @@ See `src/components/Alert/AlertUsageExample.tsx` for complete usage examples.
 2. **Keep messages concise**: Clear, actionable messages work best
 3. **Handle async operations**: Use try-catch blocks in confirm/cancel handlers
 4. **Provide context**: Use titles to give additional context when needed
+5. **Use onClose for post-alert actions**: When you need to perform actions after an alert is dismissed (like refreshing data), use the onClose callback instead of executing immediately
 5. **Test different durations**: Default 3 seconds works for most cases, adjust as needed 

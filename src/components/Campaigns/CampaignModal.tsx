@@ -14,6 +14,7 @@ interface CampaignModalProps {
   open: boolean;
   onClose: () => void;
   editCampaign?: Campaign;
+  onCampaignCreated?: () => Promise<void>;
 }
 
 interface CreateCampaignFormData {
@@ -36,7 +37,7 @@ interface ImageValidationResult {
   warnings?: string[];
 }
 
-export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, editCampaign }) => {
+export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, editCampaign, onCampaignCreated }) => {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isProcessingImage, setIsProcessingImage] = useState(false);
@@ -46,7 +47,7 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
   const [categories, setCategories] = useState<AddressCategory[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { createCampaign, editCampaign: editCampaignApi, refetch } = useCampaigns();
+  const { createCampaign, editCampaign: editCampaignApi } = useCampaigns();
   const navigate = useNavigate();
   const alert = useAlert();
   const isEditMode = !!editCampaign;
@@ -370,13 +371,16 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
       
       // Show success alert with message from backend
       const successMessage = response.message || `Campaign ${isEditMode ? 'updated' : 'created'} successfully!`;
+      
       alert.success(successMessage, {
         title: 'Success',
         duration: 4000
       });
       
-      // Refresh campaigns list with loading state
-      await refetch(true);
+      // Call the parent callback to refresh the campaign list
+      if (onCampaignCreated) {
+        onCampaignCreated();
+      }
     } catch (error: any) {
       console.error(`Campaign ${isEditMode ? 'update' : 'creation'} error:`, error);
       alert.error(error?.message || `Failed to ${isEditMode ? 'update' : 'create'} campaign.`, {

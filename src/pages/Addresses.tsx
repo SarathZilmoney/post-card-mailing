@@ -1,32 +1,50 @@
 import React, { useState } from 'react';
-import { Plus, Search, Filter, Upload, Download, Eye, Edit, Trash2, User, MailIcon } from 'lucide-react';
+import { Plus, Search, Filter, Upload, Download, Eye, Trash2, User, MailIcon, Star, MapPin, Phone, Globe, AlertCircle, ChevronDown, ChevronUp, Clock, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAddresses } from '../hooks/useAddresses';
 import { useTheme } from '../context/ThemeContext';
+import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
 
 export const Addresses: React.FC = () => {
-  const { addresses, total, loading, deleteAddress, importAddresses } = useAddresses();
+  const { addresses, total, currentPage, totalPages, loading, error, goToPage, goToNextPage, goToPreviousPage, deleteAddress, importAddresses } = useAddresses();
   const { isDark } = useTheme();
-  const [page, setPage] = useState(1);
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
-  const [sourceFilter, setSourceFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
   
-  const filteredAddresses = addresses.filter(address => {
+  const filteredAddresses = addresses?.filter(address => {
     const matchesSearch = 
-      (address.businessName?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
-      (address.contactName?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
-      (address.email?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
-      address.street.toLowerCase().includes(searchTerm.toLowerCase());
+      address.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      address.full_address.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      address.phone.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      address.category.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = statusFilter === 'all' || address.status === statusFilter;
-    const matchesSource = sourceFilter === 'all' || address.source === sourceFilter;
+    const matchesStatus = statusFilter === 'all' || address.business_status.toLowerCase() === statusFilter.toLowerCase();
+    const matchesCategory = categoryFilter === 'all' || address.category.toLowerCase() === categoryFilter.toLowerCase();
     
-    return matchesSearch && matchesStatus && matchesSource;
-  });
+    return matchesSearch && matchesStatus && matchesCategory;
+  }) || [];
 
-  const handleDelete = async (id: string) => {
+  const toggleRowExpansion = (addressId: number) => {
+    setExpandedRows(prev => {
+      const newExpanded = new Set(prev);
+      if (newExpanded.has(addressId)) {
+        newExpanded.delete(addressId);
+      } else {
+        newExpanded.add(addressId);
+      }
+      return newExpanded;
+    });
+  };
+
+  const handleAddAddress = () => {
+    navigate('/outscrapper');
+  };
+
+  const handleDelete = async (id: number) => {
     if (window.confirm('Are you sure you want to delete this address?')) {
       try {
         await deleteAddress(id);
@@ -50,30 +68,336 @@ export const Addresses: React.FC = () => {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'validated':
+    switch (status.toLowerCase()) {
+      case 'operational':
         return 'bg-green-500/20 text-green-300 border-green-400/30';
-      case 'invalid':
-        return 'bg-red-500/20 text-red-300 border-red-400/30';
-      case 'blacklisted':
-        return 'bg-gray-500/20 text-gray-300 border-gray-400/30';
-      default:
+      case 'closed_temporarily':
         return 'bg-yellow-500/20 text-yellow-300 border-yellow-400/30';
+      case 'closed_permanently':
+        return 'bg-red-500/20 text-red-300 border-red-400/30';
+      default:
+        return 'bg-gray-500/20 text-gray-300 border-gray-400/30';
     }
   };
 
-  const getSourceColor = (source: string) => {
-    switch (source) {
-      case 'manual':
-        return 'bg-purple-500/20 text-purple-300 border-purple-400/30';
-      case 'csv':
+  const getCategoryColor = (category: string) => {
+    switch (category.toLowerCase()) {
+      case 'restaurants':
+        return 'bg-orange-500/20 text-orange-300 border-orange-400/30';
+      case 'retail':
         return 'bg-blue-500/20 text-blue-300 border-blue-400/30';
-      case 'outscrapper':
+      case 'services':
+        return 'bg-purple-500/20 text-purple-300 border-purple-400/30';
+      case 'healthcare':
         return 'bg-green-500/20 text-green-300 border-green-400/30';
       default:
         return 'bg-gray-500/20 text-gray-300 border-gray-400/30';
     }
   };
+
+  const getRatingStars = (rating: string) => {
+    const numRating = parseFloat(rating);
+    const stars = [];
+    for (let i = 1; i <= 5; i++) {
+      if (i <= numRating) {
+        stars.push(<Star key={i} className="h-3 w-3 fill-yellow-400 text-yellow-400" />);
+      } else if (i - 0.5 <= numRating) {
+        stars.push(<Star key={i} className="h-3 w-3 fill-yellow-400/50 text-yellow-400" />);
+      } else {
+        stars.push(<Star key={i} className="h-3 w-3 text-gray-400" />);
+      }
+    }
+    return stars;
+  };
+
+  const formatWorkingHours = (workingHours: { [key: string]: string }) => {
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    return days.map(day => ({
+      day,
+      hours: workingHours[day] || 'Closed'
+    }));
+  };
+
+  const renderExpandedRow = (address: any) => {
+    const workingHours = formatWorkingHours(address.working_hours);
+    
+    return (
+      <tr key={`${address.id}-expanded`} className={`${
+        isDark ? 'bg-dark-900/50' : 'bg-gray-50/50'
+      } border-t-0`}>
+        <td colSpan={8} className="px-6 py-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Location Details */}
+            <div className={`${
+              isDark ? 'bg-dark-800/30 border-dark-600' : 'bg-white border-gray-200'
+            } rounded-lg p-4 border`}>
+              <h4 className={`text-sm font-semibold ${
+                isDark ? 'text-white' : 'text-gray-900'
+              } mb-3 flex items-center`}>
+                <MapPin className="h-4 w-4 mr-2" />
+                Location Details
+              </h4>
+              <div className="space-y-2 text-sm">
+                <div>
+                  <span className={`font-medium ${
+                    isDark ? 'text-gray-300' : 'text-gray-700'
+                  }`}>Full Address:</span>
+                  <p className={`${
+                    isDark ? 'text-gray-400' : 'text-gray-600'
+                  } mt-1`}>{address.full_address}</p>
+                </div>
+                <div>
+                  <span className={`font-medium ${
+                    isDark ? 'text-gray-300' : 'text-gray-700'
+                  }`}>Coordinates:</span>
+                  <p className={`${
+                    isDark ? 'text-gray-400' : 'text-gray-600'
+                  } mt-1`}>{address.latitude}, {address.longitude}</p>
+                </div>
+                <div>
+                  <span className={`font-medium ${
+                    isDark ? 'text-gray-300' : 'text-gray-700'
+                  }`}>Time Zone:</span>
+                  <p className={`${
+                    isDark ? 'text-gray-400' : 'text-gray-600'
+                  } mt-1`}>{address.time_zone}</p>
+                </div>
+                <div>
+                  <span className={`font-medium ${
+                    isDark ? 'text-gray-300' : 'text-gray-700'
+                  }`}>Google Place ID:</span>
+                  <p className={`${
+                    isDark ? 'text-gray-400' : 'text-gray-600'
+                  } mt-1 text-xs font-mono`}>{address.place_id}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Business Information */}
+            <div className={`${
+              isDark ? 'bg-dark-800/30 border-dark-600' : 'bg-white border-gray-200'
+            } rounded-lg p-4 border`}>
+              <h4 className={`text-sm font-semibold ${
+                isDark ? 'text-white' : 'text-gray-900'
+              } mb-3 flex items-center`}>
+                <Globe className="h-4 w-4 mr-2" />
+                Business Information
+              </h4>
+              <div className="space-y-2 text-sm">
+                <div>
+                  <span className={`font-medium ${
+                    isDark ? 'text-gray-300' : 'text-gray-700'
+                  }`}>Google ID:</span>
+                  <p className={`${
+                    isDark ? 'text-gray-400' : 'text-gray-600'
+                  } mt-1 text-xs font-mono`}>{address.google_id}</p>
+                </div>
+                <div>
+                  <span className={`font-medium ${
+                    isDark ? 'text-gray-300' : 'text-gray-700'
+                  }`}>Total Reviews:</span>
+                  <p className={`${
+                    isDark ? 'text-gray-400' : 'text-gray-600'
+                  } mt-1`}>{address.reviews.toLocaleString()}</p>
+                </div>
+                {address.description && (
+                  <div>
+                    <span className={`font-medium ${
+                      isDark ? 'text-gray-300' : 'text-gray-700'
+                    }`}>Description:</span>
+                    <p className={`${
+                      isDark ? 'text-gray-400' : 'text-gray-600'
+                    } mt-1`}>{address.description}</p>
+                  </div>
+                )}
+                <div>
+                  <span className={`font-medium ${
+                    isDark ? 'text-gray-300' : 'text-gray-700'
+                  }`}>Google Maps:</span>
+                  <a
+                    href={address.location_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`${
+                      isDark ? 'text-purple-400 hover:text-purple-300' : 'text-purple-600 hover:text-purple-500'
+                    } mt-1 flex items-center text-sm`}
+                  >
+                    View on Google Maps
+                    <ExternalLink className="h-3 w-3 ml-1" />
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            {/* Working Hours */}
+            <div className={`${
+              isDark ? 'bg-dark-800/30 border-dark-600' : 'bg-white border-gray-200'
+            } rounded-lg p-4 border`}>
+              <h4 className={`text-sm font-semibold ${
+                isDark ? 'text-white' : 'text-gray-900'
+              } mb-3 flex items-center`}>
+                <Clock className="h-4 w-4 mr-2" />
+                Working Hours
+              </h4>
+              <div className="space-y-1 text-sm">
+                {workingHours.map(({ day, hours }) => (
+                  <div key={day} className="flex justify-between">
+                    <span className={`font-medium ${
+                      isDark ? 'text-gray-300' : 'text-gray-700'
+                    }`}>{day}:</span>
+                    <span className={`${
+                      isDark ? 'text-gray-400' : 'text-gray-600'
+                    }`}>{hours}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </td>
+      </tr>
+    );
+  };
+
+  const renderPagination = () => {
+    // Always show pagination info when there are addresses
+    if (!addresses || addresses.length === 0) return null;
+
+    const pages = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+    // Adjust start page if we're near the end
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+
+    return (
+      <div className={`px-6 py-4 border-t ${
+        isDark ? 'border-dark-600' : 'border-gray-200'
+      }`}>
+        <div className="flex items-center justify-between">
+          <div className={`text-sm ${
+            isDark ? 'text-gray-400' : 'text-gray-600'
+          }`}>
+            {totalPages > 1 ? (
+              <>Showing page {currentPage} of {totalPages} ({total} total addresses)</>
+            ) : (
+              <>Showing all {total} addresses</>
+            )}
+          </div>
+          
+          {/* Only show navigation controls if there are multiple pages */}
+          {totalPages > 1 && (
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={goToPreviousPage}
+                disabled={currentPage === 1}
+                className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  currentPage === 1
+                    ? isDark
+                      ? 'text-gray-500 cursor-not-allowed'
+                      : 'text-gray-400 cursor-not-allowed'
+                    : isDark
+                      ? 'text-gray-300 hover:text-white hover:bg-dark-800/50'
+                      : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Previous
+              </button>
+
+              <div className="flex items-center space-x-1">
+                {startPage > 1 && (
+                  <>
+                    <button
+                      onClick={() => goToPage(1)}
+                      className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                        isDark
+                          ? 'text-gray-300 hover:text-white hover:bg-dark-800/50'
+                          : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                      }`}
+                    >
+                      1
+                    </button>
+                    {startPage > 2 && (
+                      <span className={`px-2 ${
+                        isDark ? 'text-gray-500' : 'text-gray-400'
+                      }`}>...</span>
+                    )}
+                  </>
+                )}
+
+                {pages.map(page => (
+                  <button
+                    key={page}
+                    onClick={() => goToPage(page)}
+                    className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      page === currentPage
+                        ? isDark
+                          ? 'bg-purple-500 text-white'
+                          : 'bg-purple-600 text-white'
+                        : isDark
+                          ? 'text-gray-300 hover:text-white hover:bg-dark-800/50'
+                          : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+
+                {endPage < totalPages && (
+                  <>
+                    {endPage < totalPages - 1 && (
+                      <span className={`px-2 ${
+                        isDark ? 'text-gray-500' : 'text-gray-400'
+                      }`}>...</span>
+                    )}
+                    <button
+                      onClick={() => goToPage(totalPages)}
+                      className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                        isDark
+                          ? 'text-gray-300 hover:text-white hover:bg-dark-800/50'
+                          : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                      }`}
+                    >
+                      {totalPages}
+                    </button>
+                  </>
+                )}
+              </div>
+
+              <button
+                onClick={goToNextPage}
+                disabled={currentPage === totalPages}
+                className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  currentPage === totalPages
+                    ? isDark
+                      ? 'text-gray-500 cursor-not-allowed'
+                      : 'text-gray-400 cursor-not-allowed'
+                    : isDark
+                      ? 'text-gray-300 hover:text-white hover:bg-dark-800/50'
+                      : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                Next
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Get unique categories for filter (only if addresses exist)
+  const categories = addresses && addresses.length > 0 
+    ? [...new Set(addresses.map(addr => addr.category))]
+    : [];
 
   if (loading) {
     return (
@@ -101,6 +425,47 @@ export const Addresses: React.FC = () => {
     );
   }
 
+  // Show error state
+  if (error) {
+    return (
+      <div className="space-y-6 animate-fadeIn">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold gradient-text">Address Lists</h1>
+            <p className={`mt-2 ${
+              isDark ? 'text-gray-400' : 'text-gray-600'
+            }`}>
+              Manage your mailing addresses and business contacts
+            </p>
+          </div>
+        </div>
+
+        <div className={`${
+          isDark ? 'glass-dark' : 'glass bg-white/70 border-gray-200/50'
+        } rounded-2xl p-8`}>
+          <div className="text-center">
+            <div className="w-16 h-16 bg-red-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="h-8 w-8 text-red-400" />
+            </div>
+            <h3 className={`text-lg font-medium ${
+              isDark ? 'text-white' : 'text-gray-900'
+            } mb-2`}>Failed to load addresses</h3>
+            <p className={`${
+              isDark ? 'text-gray-400' : 'text-gray-600'
+            } mb-4`}>
+              There was an error loading your addresses. Please try again.
+            </p>
+            <p className={`text-sm ${
+              isDark ? 'text-gray-500' : 'text-gray-500'
+            }`}>
+              Error: {error}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center justify-between">
@@ -109,7 +474,7 @@ export const Addresses: React.FC = () => {
           <p className={`mt-2 ${
             isDark ? 'text-gray-400' : 'text-gray-600'
           }`}>
-            Manage your mailing addresses and contact lists
+            Manage your mailing addresses and business contacts
           </p>
         </div>
         <div className="flex items-center space-x-3">
@@ -135,7 +500,7 @@ export const Addresses: React.FC = () => {
             <Download className="h-4 w-4 mr-2" />
             Export
           </button>
-          <button className="inline-flex items-center px-4 py-2 btn-gradient text-sm font-medium rounded-lg text-white">
+          <button onClick={handleAddAddress} className="inline-flex items-center px-4 py-2 btn-gradient text-sm font-medium rounded-lg text-white">
             <User className="h-4 w-4 mr-2" />
             Add Address
           </button>
@@ -153,7 +518,7 @@ export const Addresses: React.FC = () => {
               } h-4 w-4`} />
               <input
                 type="text"
-                placeholder="Search addresses..."
+                placeholder="Search businesses..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className={`block w-full pl-10 pr-3 py-2 ${
@@ -174,157 +539,203 @@ export const Addresses: React.FC = () => {
                 } rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200`}
               >
                 <option value="all">All Status</option>
-                <option value="pending">Pending</option>
-                <option value="validated">Validated</option>
-                <option value="invalid">Invalid</option>
-                <option value="blacklisted">Blacklisted</option>
+                <option value="operational">Operational</option>
+                <option value="closed_temporarily">Closed Temporarily</option>
+                <option value="closed_permanently">Closed Permanently</option>
               </select>
               <select
-                value={sourceFilter}
-                onChange={(e) => setSourceFilter(e.target.value)}
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
                 className={`${
                   isDark 
                     ? 'bg-dark-800/50 border-dark-600 text-white' 
                     : 'bg-white border-gray-300 text-gray-900'
                 } rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200`}
               >
-                <option value="all">All Sources</option>
-                <option value="manual">Manual</option>
-                <option value="csv">CSV Import</option>
-                <option value="outscrapper">Outscrapper</option>
+                <option value="all">All Categories</option>
+                {categories.map(category => (
+                  <option key={category} value={category}>
+                    {category.charAt(0).toUpperCase() + category.slice(1)}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full">
-            <thead className={`${
-              isDark ? 'bg-dark-800/50' : 'bg-gray-50'
-            }`}>
-              <tr>
-                <th className={`px-6 py-3 text-left text-xs font-medium ${
-                  isDark ? 'text-gray-300' : 'text-gray-500'
-                } uppercase tracking-wider`}>
-                  Contact
-                </th>
-                <th className={`px-6 py-3 text-left text-xs font-medium ${
-                  isDark ? 'text-gray-300' : 'text-gray-500'
-                } uppercase tracking-wider`}>
-                  Address
-                </th>
-                <th className={`px-6 py-3 text-left text-xs font-medium ${
-                  isDark ? 'text-gray-300' : 'text-gray-500'
-                } uppercase tracking-wider`}>
-                  Status
-                </th>
-                <th className={`px-6 py-3 text-left text-xs font-medium ${
-                  isDark ? 'text-gray-300' : 'text-gray-500'
-                } uppercase tracking-wider`}>
-                  Source
-                </th>
-                <th className={`px-6 py-3 text-left text-xs font-medium ${
-                  isDark ? 'text-gray-300' : 'text-gray-500'
-                } uppercase tracking-wider`}>
-                  Added
-                </th>
-                <th className={`px-6 py-3 text-left text-xs font-medium ${
-                  isDark ? 'text-gray-300' : 'text-gray-500'
-                } uppercase tracking-wider`}>
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className={`divide-y ${
-              isDark ? 'divide-dark-600' : 'divide-gray-200'
-            }`}>
-              {filteredAddresses.map((address) => (
-                <tr key={address.id} className={`${
-                  isDark ? 'hover:bg-dark-800/30' : 'hover:bg-gray-50'
-                } transition-colors`}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className={`text-sm font-medium ${
-                      isDark ? 'text-white' : 'text-gray-900'
-                    }`}>
-                      {address.businessName || 'N/A'}
-                    </div>
-                    <div className={`text-sm ${
-                      isDark ? 'text-gray-400' : 'text-gray-600'
-                    }`}>
-                      {address.contactName || address.email || 'N/A'}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className={`text-sm ${
-                      isDark ? 'text-white' : 'text-gray-900'
-                    }`}>
-                      {address.street}
-                    </div>
-                    <div className={`text-sm ${
-                      isDark ? 'text-gray-400' : 'text-gray-600'
-                    }`}>
-                      {address.city}, {address.state} {address.zipCode}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className={`text-sm ${
-                      isDark ? 'text-white' : 'text-gray-900'
-                    }`}>
-                      {address.phone || 'N/A'}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(address.status)}`}>
-                      {address.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getSourceColor(address.source)}`}>
-                      {address.source}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className={`text-sm ${
-                      isDark ? 'text-gray-400' : 'text-gray-600'
-                    }`}>
-                      {formatDistanceToNow(new Date(address.createdAt), { addSuffix: true })}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex items-center space-x-2">
-                      <button className={`${
-                        isDark 
-                          ? 'text-gray-400 hover:text-purple-400 hover:bg-dark-800/50' 
-                          : 'text-gray-500 hover:text-purple-500 hover:bg-gray-100'
-                      } p-1 rounded transition-colors`}>
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      <button className={`${
-                        isDark 
-                          ? 'text-gray-400 hover:text-purple-400 hover:bg-dark-800/50' 
-                          : 'text-gray-500 hover:text-purple-500 hover:bg-gray-100'
-                      } p-1 rounded transition-colors`}>
-                        <Edit className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(address.id)}
-                        className={`${
-                          isDark 
-                            ? 'text-gray-400 hover:text-red-400 hover:bg-dark-800/50' 
-                            : 'text-gray-500 hover:text-red-500 hover:bg-gray-100'
-                        } p-1 rounded transition-colors`}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {/* Show data table only if there are addresses */}
+        {addresses && addresses.length > 0 ? (
+          <>
+            <div className="overflow-x-auto">
+              <table className="min-w-full">
+                <thead className={`${
+                  isDark ? 'bg-dark-800/50' : 'bg-gray-50'
+                }`}>
+                  <tr>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${
+                      isDark ? 'text-gray-300' : 'text-gray-500'
+                    } uppercase tracking-wider`}>
+                      Business
+                    </th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${
+                      isDark ? 'text-gray-300' : 'text-gray-500'
+                    } uppercase tracking-wider`}>
+                      Address
+                    </th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${
+                      isDark ? 'text-gray-300' : 'text-gray-500'
+                    } uppercase tracking-wider`}>
+                      Contact
+                    </th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${
+                      isDark ? 'text-gray-300' : 'text-gray-500'
+                    } uppercase tracking-wider`}>
+                      Rating
+                    </th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${
+                      isDark ? 'text-gray-300' : 'text-gray-500'
+                    } uppercase tracking-wider`}>
+                      Category
+                    </th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${
+                      isDark ? 'text-gray-300' : 'text-gray-500'
+                    } uppercase tracking-wider`}>
+                      Status
+                    </th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${
+                      isDark ? 'text-gray-300' : 'text-gray-500'
+                    } uppercase tracking-wider`}>
+                      Added
+                    </th>
+                    <th className={`px-6 py-3 text-left text-xs font-medium ${
+                      isDark ? 'text-gray-300' : 'text-gray-500'
+                    } uppercase tracking-wider`}>
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className={`divide-y ${
+                  isDark ? 'divide-dark-600' : 'divide-gray-200'
+                }`}>
+                  {filteredAddresses.map((address) => (
+                    <React.Fragment key={address.id}>
+                      <tr className={`${
+                        isDark ? 'hover:bg-dark-800/30' : 'hover:bg-gray-50'
+                      } transition-colors ${
+                        expandedRows.has(address.id) ? (isDark ? 'bg-dark-800/20' : 'bg-gray-50/50') : ''
+                      }`}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className={`text-sm font-medium ${
+                            isDark ? 'text-white' : 'text-gray-900'
+                          }`}>
+                            {address.name}
+                          </div>
+                          <div className={`text-sm ${
+                            isDark ? 'text-gray-400' : 'text-gray-600'
+                          }`}>
+                            {address.reviews} reviews
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className={`text-sm ${
+                            isDark ? 'text-white' : 'text-gray-900'
+                          }`}>
+                            <MapPin className="h-4 w-4 inline mr-1" />
+                            {address.street}
+                          </div>
+                          <div className={`text-sm ${
+                            isDark ? 'text-gray-400' : 'text-gray-600'
+                          }`}>
+                            {address.city}, {address.state} {address.postal_code}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className={`text-sm ${
+                            isDark ? 'text-white' : 'text-gray-900'
+                          }`}>
+                            <Phone className="h-4 w-4 inline mr-1" />
+                            {address.phone || 'N/A'}
+                          </div>
+                          {address.site && (
+                            <div className={`text-sm ${
+                              isDark ? 'text-gray-400' : 'text-gray-600'
+                            }`}>
+                              <Globe className="h-4 w-4 inline mr-1" />
+                              <a href={address.site} target="_blank" rel="noopener noreferrer" className="hover:text-purple-400">
+                                Website
+                              </a>
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center space-x-1">
+                            {getRatingStars(address.rating)}
+                            <span className={`text-sm ${
+                              isDark ? 'text-gray-400' : 'text-gray-600'
+                            } ml-1`}>
+                              {address.rating}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getCategoryColor(address.category)}`}>
+                            {address.category}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(address.business_status)}`}>
+                            {address.business_status.replace('_', ' ')}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className={`text-sm ${
+                            isDark ? 'text-gray-400' : 'text-gray-600'
+                          }`}>
+                            {formatDistanceToNow(new Date(address.created_at), { addSuffix: true })}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => toggleRowExpansion(address.id)}
+                              className={`${
+                                isDark 
+                                  ? 'text-gray-400 hover:text-purple-400 hover:bg-dark-800/50' 
+                                  : 'text-gray-500 hover:text-purple-500 hover:bg-gray-100'
+                              } p-1 rounded transition-colors`}
+                              title={expandedRows.has(address.id) ? 'Collapse details' : 'View details'}
+                            >
+                              {expandedRows.has(address.id) ? (
+                                <ChevronUp className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => handleDelete(address.id)}
+                              className={`${
+                                isDark 
+                                  ? 'text-gray-400 hover:text-red-400 hover:bg-dark-800/50' 
+                                  : 'text-gray-500 hover:text-red-500 hover:bg-gray-100'
+                              } p-1 rounded transition-colors`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                      {expandedRows.has(address.id) && renderExpandedRow(address)}
+                    </React.Fragment>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {renderPagination()}
+          </>
+        ) : null}
 
-        {filteredAddresses.length === 0 && (
+        {/* No data state */}
+        {(!addresses || addresses.length === 0) && !loading && !error && (
           <div className="text-center py-12">
             <div className="max-w-md mx-auto">
               <div className="w-16 h-16 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -336,9 +747,45 @@ export const Addresses: React.FC = () => {
               <p className={`${
                 isDark ? 'text-gray-400' : 'text-gray-600'
               } mb-6`}>
-                {searchTerm || statusFilter !== 'all' || sourceFilter !== 'all'
-                  ? 'Try adjusting your search or filters'
-                  : 'Get started by adding your first address'}
+                Get started by adding your first address or importing from CSV
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* No results on current page */}
+        {addresses && addresses.length === 0 && currentPage > 1 && (
+          <div className="text-center py-12">
+            <div className="max-w-md mx-auto">
+              <div className="w-16 h-16 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Search className="h-8 w-8 text-purple-400" />
+              </div>
+              <h3 className={`text-lg font-medium ${
+                isDark ? 'text-white' : 'text-gray-900'
+              } mb-2`}>No addresses found on this page</h3>
+              <p className={`${
+                isDark ? 'text-gray-400' : 'text-gray-600'
+              } mb-6`}>
+                You've reached beyond the available pages. Try going back to an earlier page.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* No filtered results state */}
+        {addresses && addresses.length > 0 && filteredAddresses.length === 0 && (
+          <div className="text-center py-12">
+            <div className="max-w-md mx-auto">
+              <div className="w-16 h-16 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Search className="h-8 w-8 text-purple-400" />
+              </div>
+              <h3 className={`text-lg font-medium ${
+                isDark ? 'text-white' : 'text-gray-900'
+              } mb-2`}>No matching addresses found</h3>
+              <p className={`${
+                isDark ? 'text-gray-400' : 'text-gray-600'
+              } mb-6`}>
+                Try adjusting your search or filters to find what you're looking for
               </p>
             </div>
           </div>

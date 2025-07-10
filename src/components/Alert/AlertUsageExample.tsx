@@ -19,6 +19,34 @@ const AlertUsageExample: React.FC = () => {
     });
   };
 
+  const handleSuccessWithCallback = () => {
+    alertService.success('Campaign created successfully!', {
+      title: 'Success',
+      duration: 4000,
+      onClose: () => {
+        // This will be called when the alert is closed (either auto-closed or manually dismissed)
+        console.log('Alert closed, refreshing data...');
+        // You can refresh data, navigate, or perform other actions here
+      }
+    });
+  };
+
+  // Example simulating campaign creation workflow with onClose callback
+  const handleCampaignCreationExample = () => {
+    alertService.success('Campaign created successfully!', {
+      title: 'Success',
+      duration: 4000,
+      onClose: () => {
+        // Simulate refreshing campaign list after alert is closed
+        console.log('Alert closed - refreshing campaign list...');
+        alertService.info('Campaign list refreshed!', {
+          title: 'Data Updated',
+          duration: 2000
+        });
+      }
+    });
+  };
+
   const handleErrorAlert = () => {
     alertService.error('Something went wrong. Please try again.', {
       title: 'Error',
@@ -86,6 +114,46 @@ const AlertUsageExample: React.FC = () => {
     });
   };
 
+  // Test function to verify onClose callback is working
+  const testOnCloseCallback = () => {
+    console.log('Testing onClose callback...');
+    alertService.success('This alert will trigger onClose callback!', {
+      title: 'Testing onClose',
+      duration: 2000, // Shorter duration for testing
+      onClose: () => {
+        console.log('✅ onClose callback executed successfully!');
+        // Show another alert to confirm it worked
+        alertService.info('onClose callback worked!', {
+          title: 'Callback Test Result',
+          duration: 1500
+        });
+      }
+    });
+  };
+
+  // Example demonstrating callback-based refresh pattern (like campaign creation)
+  const testCallbackPattern = () => {
+    console.log('Simulating campaign creation...');
+    
+    // Simulate successful campaign creation
+    setTimeout(() => {
+      // Show success alert and trigger callback
+      alertService.success('Campaign created successfully!', {
+        title: 'Success',
+        duration: 4000
+      });
+      
+      // Call callback to refresh data (simulating parent component callback)
+      setTimeout(() => {
+        console.log('📊 Refreshing campaign list from parent component...');
+        alertService.info('Campaign list refreshed!', {
+          title: 'Data Updated',
+          duration: 2000
+        });
+      }, 100); // Small delay to show the pattern
+    }, 1000);
+  };
+
   return (
     <div className={`p-6 rounded-lg ${
       isDark ? 'bg-dark-800/50 border-dark-600' : 'bg-gray-50 border-gray-200'
@@ -102,6 +170,20 @@ const AlertUsageExample: React.FC = () => {
           className="px-4 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors"
         >
           Show Success Alert
+        </button>
+
+        <button
+          onClick={handleSuccessWithCallback}
+          className="px-4 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors"
+        >
+          Show Success Alert with Callback
+        </button>
+
+        <button
+          onClick={handleCampaignCreationExample}
+          className="px-4 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors"
+        >
+          Show Campaign Creation Alert with Callback
         </button>
 
         <button
@@ -147,6 +229,20 @@ const AlertUsageExample: React.FC = () => {
         </button>
 
         <button
+          onClick={testOnCloseCallback}
+          className="px-4 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white transition-colors"
+        >
+          Test onClose Callback
+        </button>
+
+        <button
+          onClick={testCallbackPattern}
+          className="px-4 py-2 rounded-lg bg-teal-500 hover:bg-teal-600 text-white transition-colors"
+        >
+          Test Callback Pattern
+        </button>
+
+        <button
           onClick={() => alertService.clearAll()}
           className={`px-4 py-2 rounded-lg border transition-colors ${
             isDark 
@@ -171,9 +267,9 @@ const AlertUsageExample: React.FC = () => {
         }`}>
           <div>• <code>alertService.success("Message")</code> - Auto-closes after 3s</div>
           <div>• <code>alertService.error("Message")</code> - Auto-closes after 3s</div>
-          <div>• <code>alertService.warning("Message", {"{"} onConfirm: () => {"{}"} {"}"});</code> - Shows OK/Cancel</div>
+          <div>• <code>alertService.warning("Message", {`{ onConfirm: () => { } }`});</code> - Shows OK/Cancel</div>
           <div>• <code>alertService.info("Message")</code> - Shows OK button</div>
-          <div>• <code>await alertService.confirm("Message")</code> - Returns Promise&lt;boolean&gt;</div>
+          <div>• <code>await alertService.confirm("Message")</code> - Returns Promise{'<'}boolean{'>'}</div>
         </div>
       </div>
     </div>

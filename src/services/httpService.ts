@@ -32,6 +32,20 @@ class HttpService {
     }
 
     if (!response.ok) {
+      // Handle specific HTTP errors
+      if (response.status === 403) {
+        throw new Error('Access denied. You do not have permission to perform this action.');
+      }
+      if (response.status === 404) {
+        throw new Error('The requested resource was not found.');
+      }
+      if (response.status === 500) {
+        throw new Error('Server error. Please try again later.');
+      }
+      if (response.status >= 400 && response.status < 500) {
+        throw new Error('Bad request. Please check your data and try again.');
+      }
+      
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
@@ -39,17 +53,24 @@ class HttpService {
   }
 
   private async handleCorsError(error: any): Promise<void> {
+    // Only trigger logout for specific network errors that indicate auth issues
     if (error instanceof TypeError && error.message.includes('fetch')) {
-      console.log('CORS error detected, logging out and redirecting');
-      // Clear stored token
-      localStorage.removeItem('token');
-      
-      // Redirect to login page
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login';
+      // Check if it's a CORS error specifically related to authentication
+      if (error.message.includes('401') || error.message.includes('unauthorized')) {
+        console.log('Authentication error detected, logging out and redirecting');
+        // Clear stored token
+        localStorage.removeItem('token');
+        
+        // Redirect to login page
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
+        
+        throw new Error('Session expired. Please login again.');
       }
       
-      throw new Error('Connection error. Please check your network and try again.');
+      // For other network errors, don't logout
+      throw new Error('Network error. Please check your connection and try again.');
     }
     throw error;
   }
@@ -149,6 +170,17 @@ class HttpService {
       }
 
       if (!response.ok) {
+        // Handle specific HTTP errors
+        if (response.status === 403) {
+          throw new Error('Access denied. You do not have permission to perform this action.');
+        }
+        if (response.status === 404) {
+          throw new Error('The requested resource was not found.');
+        }
+        if (response.status === 500) {
+          throw new Error('Server error. Please try again later.');
+        }
+        
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 

@@ -2,18 +2,22 @@ import { useState, useEffect } from 'react';
 import { Address } from '../types';
 import { addressService } from '../services/addressService';
 
-export const useAddresses = (page = 1, limit = 25, filters?: any) => {
+export const useAddresses = (filters?: any) => {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [total, setTotal] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchAddresses = async () => {
+  const fetchAddresses = async (page = currentPage) => {
     try {
       setLoading(true);
-      const data = await addressService.getAddresses(page, limit, filters);
+      const data = await addressService.getAddresses(page, filters);
       setAddresses(data.addresses);
       setTotal(data.total);
+      setCurrentPage(data.currentPage);
+      setTotalPages(data.totalPages);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch addresses');
@@ -22,20 +26,43 @@ export const useAddresses = (page = 1, limit = 25, filters?: any) => {
     }
   };
 
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages && page !== currentPage) {
+      setCurrentPage(page);
+      fetchAddresses(page);
+    }
+  };
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      const nextPage = currentPage + 1;
+      setCurrentPage(nextPage);
+      fetchAddresses(nextPage);
+    }
+  };
+
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      const prevPage = currentPage - 1;
+      setCurrentPage(prevPage);
+      fetchAddresses(prevPage);
+    }
+  };
+
   const createAddress = async (addressData: Partial<Address>) => {
     try {
       const newAddress = await addressService.createAddress(addressData);
-      setAddresses(prev => [newAddress, ...prev]);
-      setTotal(prev => prev + 1);
+      // Refresh the current page to show the new address
+      await fetchAddresses(currentPage);
       return newAddress;
     } catch (err) {
       throw err;
     }
   };
 
-  const updateAddress = async (id: string, updates: Partial<Address>) => {
+  const updateAddress = async (id: number, updates: Partial<Address>) => {
     try {
-      const updatedAddress = await addressService.updateAddress(id, updates);
+      const updatedAddress = await addressService.updateAddress(id.toString(), updates);
       setAddresses(prev => prev.map(a => a.id === id ? updatedAddress : a));
       return updatedAddress;
     } catch (err) {
@@ -43,11 +70,11 @@ export const useAddresses = (page = 1, limit = 25, filters?: any) => {
     }
   };
 
-  const deleteAddress = async (id: string) => {
+  const deleteAddress = async (id: number) => {
     try {
-      await addressService.deleteAddress(id);
-      setAddresses(prev => prev.filter(a => a.id !== id));
-      setTotal(prev => prev - 1);
+      await addressService.deleteAddress(id.toString());
+      // Refresh the current page after deletion
+      await fetchAddresses(currentPage);
     } catch (err) {
       throw err;
     }
@@ -56,8 +83,9 @@ export const useAddresses = (page = 1, limit = 25, filters?: any) => {
   const importAddresses = async (file: File) => {
     try {
       const imported = await addressService.importAddresses(file);
-      setAddresses(prev => [...imported, ...prev]);
-      setTotal(prev => prev + imported.length);
+      // Refresh the first page to show imported addresses
+      setCurrentPage(1);
+      await fetchAddresses(1);
       return imported;
     } catch (err) {
       throw err;
@@ -65,15 +93,20 @@ export const useAddresses = (page = 1, limit = 25, filters?: any) => {
   };
 
   useEffect(() => {
-    fetchAddresses();
-  }, [page, limit, filters]);
+    fetchAddresses(1);
+  }, [filters]);
 
   return {
     addresses,
     total,
+    currentPage,
+    totalPages,
     loading,
     error,
     refetch: fetchAddresses,
+    goToPage,
+    goToNextPage,
+    goToPreviousPage,
     createAddress,
     updateAddress,
     deleteAddress,

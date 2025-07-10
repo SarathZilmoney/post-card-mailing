@@ -1,6 +1,5 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Eye, Edit, MoreHorizontal } from 'lucide-react';
 import { useCampaigns } from '../../hooks/useCampaigns';
 import { useTheme } from '../../context/ThemeContext';
 import { formatDistanceToNow } from 'date-fns';
@@ -76,52 +75,27 @@ export const RecentCampaigns: React.FC = () => {
       }`}>
         {campaigns.slice(0, 5).map((campaign) => (
           <div key={campaign.id} className="px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center space-x-3 mb-2">
-                  <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(campaign.status)}`}>
-                    {campaign.status.toUpperCase()}
-                  </span>
-                  <h4 className={`text-sm font-medium ${
-                    isDark ? 'text-white' : 'text-light-900'
-                  } truncate`}>
-                    {campaign.name}
-                  </h4>
-                </div>
-                <p className={`text-sm ${
-                  isDark ? 'text-gray-400' : 'text-light-600'
-                } mb-1`}>
-                  {campaign.description}
-                </p>
-                <p className={`text-xs ${
-                  isDark ? 'text-gray-500' : 'text-light-500'
-                }`}>
-                  {formatDistanceToNow(new Date(campaign.createdAt), { addSuffix: true })}
-                </p>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center space-x-3 mb-2">
+                <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(campaign.status)}`}>
+                  {campaign.status.toUpperCase()}
+                </span>
+                <h4 className={`text-sm font-medium ${
+                  isDark ? 'text-white' : 'text-light-900'
+                } truncate`}>
+                  {campaign.name}
+                </h4>
               </div>
-              <div className="flex items-center space-x-2">
-                <button className={`p-1 ${
-                  isDark 
-                    ? 'text-gray-400 hover:text-purple-400 hover:bg-dark-800/50' 
-                    : 'text-light-600 hover:text-brand-primary-600 hover:bg-light-200/60'
-                } rounded transition-colors`}>
-                  <Eye className="h-4 w-4" />
-                </button>
-                <button className={`p-1 ${
-                  isDark 
-                    ? 'text-gray-400 hover:text-purple-400 hover:bg-dark-800/50' 
-                    : 'text-light-600 hover:text-brand-primary-600 hover:bg-light-200/60'
-                } rounded transition-colors`}>
-                  <Edit className="h-4 w-4" />
-                </button>
-                <button className={`p-1 ${
-                  isDark 
-                    ? 'text-gray-400 hover:text-purple-400 hover:bg-dark-800/50' 
-                    : 'text-light-600 hover:text-brand-primary-600 hover:bg-light-200/60'
-                } rounded transition-colors`}>
-                  <MoreHorizontal className="h-4 w-4" />
-                </button>
-              </div>
+              <p className={`text-sm ${
+                isDark ? 'text-gray-400' : 'text-light-600'
+              } mb-1`}>
+                {campaign.description}
+              </p>
+              <p className={`text-xs ${
+                isDark ? 'text-gray-500' : 'text-light-500'
+              }`}>
+                {formatDistanceToNow(new Date(campaign.createdAt), { addSuffix: true })}
+              </p>
             </div>
           </div>
         ))}

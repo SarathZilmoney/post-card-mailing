@@ -1,17 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { Database, Search, Download, Filter, Target, X } from 'lucide-react';
-import { OutscrapperFetch, OutscrapperFilters } from '../types';
+import React, { useState } from 'react';
+import { Search, Filter, Target, X } from 'lucide-react';
+import { OutscrapperFilters } from '../types';
 import { outscrapperService } from '../services/outscrapperService';
 import { US_STATES, BUSINESS_TYPES, BUSINESS_TYPE_LABELS } from '../config/constants';
-import { formatDistanceToNow } from 'date-fns';
 import { alertService } from '../services/alertService';
 import { useTheme } from '../context/ThemeContext';
 import { SearchableDropdown } from '../components/UI';
 
 export const Outscrapper: React.FC = () => {
   const { isDark } = useTheme();
-  const [fetches, setFetches] = useState<OutscrapperFetch[]>([]);
-  const [loading, setLoading] = useState(true);
   const [fetchLoading, setFetchLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<OutscrapperFilters>({
@@ -23,21 +20,6 @@ export const Outscrapper: React.FC = () => {
     limit: 100
   });
   const [zipCodeError, setZipCodeError] = useState('');
-
-  useEffect(() => {
-    loadFetchHistory();
-  }, []);
-
-  const loadFetchHistory = async () => {
-    try {
-      const data = await outscrapperService.getFetchHistory();
-      setFetches(data);
-    } catch (error) {
-      console.error('Failed to load fetch history:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleFetchAddresses = () => {
     setShowFilters(true);
@@ -89,7 +71,6 @@ export const Outscrapper: React.FC = () => {
         }
       );
       
-      loadFetchHistory(); // Refresh history
       setShowFilters(false); // Hide filters after successful fetch
     } catch (error: any) {
       // Show failure alert
@@ -104,17 +85,6 @@ export const Outscrapper: React.FC = () => {
       console.error('Outscrapper fetch error:', error);
     } finally {
       setFetchLoading(false);
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return '✅';
-      case 'failed':
-        return '❌';
-      default:
-        return '⏳';
     }
   };
 
@@ -363,101 +333,6 @@ export const Outscrapper: React.FC = () => {
           </div>
         </div>
       )}
-
-      {/* Fetch History */}
-      <div className={`${
-        isDark ? 'glass-dark' : 'glass-light'
-      } rounded-2xl ${
-        isDark ? 'hover:border-purple-500/30' : 'hover:border-brand-primary-300/50'
-      } transition-all duration-300 animate-slideUp`}>
-        <div className={`px-6 py-4 border-b ${
-          isDark ? 'border-dark-600' : 'border-light-300'
-        }`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <div className={`w-8 h-8 ${
-                isDark 
-                  ? 'bg-gradient-to-br from-purple-500/20 to-pink-500/20' 
-                  : 'bg-gradient-to-br from-brand-primary-100 to-brand-secondary-100'
-              } rounded-lg flex items-center justify-center`}>
-                <Database className={`h-4 w-4 ${
-                  isDark ? 'text-purple-400' : 'text-brand-primary-600'
-                }`} />
-              </div>
-              <h3 className={`text-lg font-medium ${
-                isDark ? 'text-white' : 'text-light-900'
-              }`}>Recent Fetch History</h3>
-            </div>
-          </div>
-        </div>
-
-        <div className={`divide-y ${
-          isDark ? 'divide-dark-600' : 'divide-light-300'
-        }`}>
-          {loading ? (
-            <div className="px-6 py-8 text-center">
-              <div className={`${
-                isDark ? 'spinner' : 'spinner-light'
-              } mx-auto mb-4`}></div>
-              <p className={`${
-                isDark ? 'text-gray-400' : 'text-light-600'
-              }`}>Loading fetch history...</p>
-            </div>
-          ) : fetches.length === 0 ? (
-            <div className="px-6 py-8 text-center">
-              <Database className={`h-12 w-12 ${
-                isDark ? 'text-gray-600' : 'text-light-400'
-              } mx-auto mb-4`} />
-              <h3 className={`text-lg font-medium ${
-                isDark ? 'text-white' : 'text-light-900'
-              } mb-2`}>No fetch history yet</h3>
-              <p className={`${
-                isDark ? 'text-gray-400' : 'text-light-600'
-              }`}>
-                Your recent address fetches will appear here
-              </p>
-            </div>
-          ) : (
-            fetches.map((fetch) => (
-              <div key={fetch.id} className={`px-6 py-4 ${
-                isDark ? 'hover:bg-dark-800/30' : 'hover:bg-light-100/50'
-              } transition-colors`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-lg">{getStatusIcon(fetch.status)}</span>
-                      <h4 className={`text-sm font-medium ${
-                        isDark ? 'text-white' : 'text-light-900'
-                      }`}>
-                        {fetch.query}
-                      </h4>
-                    </div>
-                    <div className={`flex items-center space-x-4 mt-1 text-xs ${
-                      isDark ? 'text-gray-500' : 'text-light-500'
-                    }`}>
-                      <span>{fetch.recordsFetched} records</span>
-                      <span>{fetch.creditsUsed} credits</span>
-                      <span>{formatDistanceToNow(new Date(fetch.createdAt))} ago</span>
-                    </div>
-                    {fetch.error && (
-                      <p className="text-xs text-red-400 mt-1">{fetch.error}</p>
-                    )}
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button className={`p-1 ${
-                      isDark 
-                        ? 'text-gray-400 hover:text-purple-400 hover:bg-dark-800/50' 
-                        : 'text-light-600 hover:text-brand-primary-600 hover:bg-light-200/60'
-                    } rounded transition-colors`}>
-                      <Download className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
     </div>
   );
 };
