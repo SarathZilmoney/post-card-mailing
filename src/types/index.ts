@@ -42,32 +42,47 @@ export interface Campaign {
 }
 
 export interface Address {
-  id: string;
-  businessName?: string;
-  contactName?: string;
+  id: number;
+  name: string;
+  place_id: string;
+  google_id: string;
+  full_address: string;
   street: string;
+  postal_code: string;
+  country_code: string;
+  country: string;
   city: string;
   state: string;
-  zipCode: string;
-  phone?: string;
-  email?: string;
-  source: 'manual' | 'csv' | 'outscrapper';
-  status: 'pending' | 'validated' | 'invalid' | 'blacklisted';
-  lastMailedDate?: string;
-  createdAt: string;
-  campaigns: string[];
+  us_state: string;
+  latitude: string;
+  longitude: string;
+  time_zone: string;
+  category: string;
+  rating: string;
+  location_link: string;
+  phone: string;
+  site: string;
+  description: string | null;
+  reviews: number;
+  working_hours: string | {
+    [key: string]: string;
+  };
+  business_status: string;
+  created_at: string;
+  updated_at: string;
 }
 
-export interface OutscrapperFetch {
-  id: string;
-  query: string;
-  filters: OutscrapperFilters;
-  status: 'pending' | 'completed' | 'failed';
-  recordsFetched: number;
-  creditsUsed: number;
-  createdAt: string;
-  completedAt?: string;
-  error?: string;
+export interface AddressResponse {
+  success: boolean;
+  data: {
+    data: Address[];
+    current_page: number;
+    per_page: number;
+    total: number;
+    last_page: number;
+    from: number;
+    to: number;
+  };
 }
 
 export interface OutscrapperFilters {
@@ -106,6 +121,7 @@ export interface AlertOptions {
   duration?: number; // in milliseconds, 0 means no auto-close
   onConfirm?: () => void | Promise<void>;
   onCancel?: () => void | Promise<void>;
+  onClose?: () => void | Promise<void>; // Called when alert is closed/dismissed
   confirmText?: string;
   cancelText?: string;
   icon?: React.ReactNode;
@@ -120,7 +136,7 @@ export interface Alert extends AlertOptions {
 export interface AlertContextType {
   alerts: Alert[];
   showAlert: (options: AlertOptions) => string;
-  hideAlert: (id: string) => void;
+  hideAlert: (id: string, onCloseCallback?: () => void | Promise<void>) => void;
   clearAllAlerts: () => void;
   // Convenience methods
   success: (message: string, options?: Partial<AlertOptions>) => string;

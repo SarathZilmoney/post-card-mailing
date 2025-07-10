@@ -37,8 +37,10 @@ export const AlertProvider: React.FC<AlertProviderProps> = ({ children }) => {
     if (options.type === 'success' || options.type === 'error') {
       const duration = options.duration !== undefined ? options.duration : 3000;
       if (duration > 0) {
+        // Capture the onClose callback in a closure to avoid stale reference issues
+        const onCloseCallback = options.onClose;
         setTimeout(() => {
-          hideAlert(id);
+          hideAlert(id, onCloseCallback);
         }, duration);
       }
     }
@@ -46,18 +48,38 @@ export const AlertProvider: React.FC<AlertProviderProps> = ({ children }) => {
     return id;
   }, [generateId]);
 
-  const hideAlert = useCallback((id: string) => {
+  const hideAlert = useCallback((id: string, onCloseCallback?: () => void | Promise<void>) => {
+    // If onCloseCallback is not provided, try to find it in the alerts array
+    let finalOnCloseCallback = onCloseCallback;
+    if (!finalOnCloseCallback) {
+      const targetAlert = alerts.find(a => a.id === id);
+      finalOnCloseCallback = targetAlert?.onClose;
+    }
+    
+    // Debug logging (can be removed in production)
+    // console.log('hideAlert called for:', id, 'has onClose:', !!finalOnCloseCallback);
+    
     setAlerts(prev => 
       prev.map(alert => 
         alert.id === id ? { ...alert, isVisible: false } : alert
       )
     );
     
-    // Remove from DOM after animation
+    // Remove from DOM after animation and call onClose callback
     setTimeout(() => {
       setAlerts(prev => prev.filter(alert => alert.id !== id));
+      
+      // Call onClose callback if it exists
+      if (finalOnCloseCallback) {
+        try {
+          // console.log('Calling onClose callback for alert:', id);
+          finalOnCloseCallback();
+        } catch (error) {
+          console.error('Error in alert onClose callback:', error);
+        }
+      }
     }, 300);
-  }, []);
+  }, [alerts]);
 
   const clearAllAlerts = useCallback(() => {
     setAlerts([]);

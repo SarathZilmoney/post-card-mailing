@@ -1,173 +1,143 @@
-import { Address } from '../types';
+import { Address, AddressResponse } from '../types';
 import { httpService } from './httpService';
 
 class AddressService {
-  async getAddresses(page = 1, limit = 25, filters?: any): Promise<{ addresses: Address[]; total: number }> {
+  async getAddresses(page = 1, filters?: any): Promise<{ addresses: Address[]; total: number; currentPage: number; totalPages: number }> {
     try {
-      // Try to make actual API call to backend
       const queryParams = new URLSearchParams({
         page: page.toString(),
-        limit: limit.toString(),
         ...filters
       });
       
-      const data = await httpService.get(`/addresses?${queryParams}`);
-      return data;
+      const queryString = queryParams.toString();
+      const endpoint = queryString ? `/sua/postal-cards/list-postal-addresses?${queryString}` : '/sua/postal-cards/list-postal-addresses';
+      
+      const response: AddressResponse = await httpService.get(endpoint);
+      
+      if (response.success) {
+        const responseData = response.data;
+        const addresses = responseData.data || [];
+        
+        // Parse working_hours from JSON string to object for each address
+        const parsedAddresses = addresses.map(address => ({
+          ...address,
+          working_hours: typeof address.working_hours === 'string' 
+            ? JSON.parse(address.working_hours) 
+            : address.working_hours
+        }));
+        
+        return {
+          addresses: parsedAddresses,
+          total: responseData.total,
+          currentPage: responseData.current_page,
+          totalPages: responseData.last_page
+        };
+      } else {
+        throw new Error('Failed to fetch addresses from server');
+      }
     } catch (error) {
-      console.log('Get addresses API call failed, using mock data:', error);
-      return this.getMockAddresses(page, limit, filters);
+      console.error('Get addresses API call failed:', error);
+      
+      // Check if it's an authentication error
+      if (error instanceof Error && error.message.includes('Session expired')) {
+        // Re-throw authentication errors to trigger proper logout
+        throw error;
+      }
+      
+      // For other errors, provide a user-friendly message without triggering logout
+      throw new Error('Unable to load addresses. Please check your connection and try again.');
     }
-  }
-
-  private getMockAddresses(page = 1, limit = 25, filters?: any): { addresses: Address[]; total: number } {
-    // Mock addresses data
-    const mockAddresses: Address[] = Array.from({ length: 50 }, (_, i) => ({
-      id: `addr-${i + 1}`,
-      businessName: `Business ${i + 1}`,
-      contactName: `Contact Person ${i + 1}`,
-      street: `${100 + i} Business Street`,
-      city: ['Los Angeles', 'San Francisco', 'San Diego', 'Sacramento'][i % 4],
-      state: 'CA',
-      zipCode: `9000${i}`,
-      phone: `(555) 000-${String(i).padStart(4, '0')}`,
-      email: `contact${i + 1}@business.com`,
-      source: ['manual', 'csv', 'outscrapper'][i % 3] as any,
-      status: ['pending', 'validated', 'invalid'][i % 3] as any,
-      createdAt: new Date(Date.now() - i * 86400000).toISOString(),
-      campaigns: []
-    }));
-
-    const start = (page - 1) * limit;
-    const end = start + limit;
-    
-    return {
-      addresses: mockAddresses.slice(start, end),
-      total: mockAddresses.length
-    };
   }
 
   async createAddress(addressData: Partial<Address>): Promise<Address> {
     try {
-      // Try to make actual API call to backend
-      const data = await httpService.post('/addresses', addressData);
+      const data = await httpService.post('/sua/postal-cards/create-address', addressData);
       return data;
     } catch (error) {
-      console.log('Create address API call failed, using mock creation:', error);
-      return this.mockCreateAddress(addressData);
+      console.error('Create address API call failed:', error);
+      
+      if (error instanceof Error && error.message.includes('Session expired')) {
+        throw error;
+      }
+      
+      throw new Error('Failed to create address. Please try again.');
     }
-  }
-
-  private mockCreateAddress(addressData: Partial<Address>): Address {
-    const newAddress: Address = {
-      id: Date.now().toString(),
-      street: '',
-      city: '',
-      state: '',
-      zipCode: '',
-      source: 'manual',
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-      campaigns: [],
-      ...addressData
-    };
-    return newAddress;
   }
 
   async updateAddress(id: string, updates: Partial<Address>): Promise<Address> {
     try {
-      // Try to make actual API call to backend
-      const data = await httpService.put(`/addresses/${id}`, updates);
+      const data = await httpService.put(`/sua/postal-cards/update-address/${id}`, updates);
       return data;
     } catch (error) {
-      console.log('Update address API call failed, using mock update:', error);
-      return this.mockUpdateAddress(id, updates);
+      console.error('Update address API call failed:', error);
+      
+      if (error instanceof Error && error.message.includes('Session expired')) {
+        throw error;
+      }
+      
+      throw new Error('Failed to update address. Please try again.');
     }
-  }
-
-  private async mockUpdateAddress(id: string, updates: Partial<Address>): Promise<Address> {
-    const { addresses } = await this.getMockAddresses();
-    const address = addresses.find(a => a.id === id);
-    if (!address) throw new Error('Address not found');
-    
-    return { ...address, ...updates };
   }
 
   async deleteAddress(id: string): Promise<void> {
     try {
-      // Try to make actual API call to backend
-      await httpService.delete(`/addresses/${id}`);
+      await httpService.delete(`/sua/postal-cards/delete-address/${id}`);
     } catch (error) {
-      console.log('Delete address API call failed, using mock delete:', error);
-      this.mockDeleteAddress(id);
+      console.error('Delete address API call failed:', error);
+      
+      if (error instanceof Error && error.message.includes('Session expired')) {
+        throw error;
+      }
+      
+      throw new Error('Failed to delete address. Please try again.');
     }
-  }
-
-  private mockDeleteAddress(id: string): void {
-    console.log('Deleting address:', id);
   }
 
   async importAddresses(file: File): Promise<Address[]> {
     try {
-      // Try to make actual API call to backend
       const formData = new FormData();
       formData.append('file', file);
       
-      const data = await httpService.post('/addresses/import', formData);
-      return data;
+      const data = await httpService.post('/sua/postal-cards/import-addresses', formData);
+      return data || [];
     } catch (error) {
-      console.log('Import addresses API call failed, using mock import:', error);
-      return this.mockImportAddresses(file);
+      console.error('Import addresses API call failed:', error);
+      
+      if (error instanceof Error && error.message.includes('Session expired')) {
+        throw error;
+      }
+      
+      throw new Error('Failed to import addresses. Please check your file format and try again.');
     }
-  }
-
-  private mockImportAddresses(file: File): Promise<Address[]> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const mockImported: Address[] = Array.from({ length: 10 }, (_, i) => ({
-          id: `imported-${Date.now()}-${i}`,
-          businessName: `Imported Business ${i + 1}`,
-          street: `${200 + i} Imported Street`,
-          city: 'Import City',
-          state: 'NY',
-          zipCode: `1000${i}`,
-          source: 'csv',
-          status: 'pending',
-          createdAt: new Date().toISOString(),
-          campaigns: []
-        }));
-        resolve(mockImported);
-      }, 2000);
-    });
   }
 
   async validateAddresses(addressIds: string[]): Promise<void> {
     try {
-      // Try to make actual API call to backend
-      await httpService.post('/addresses/validate', { addressIds });
+      await httpService.post('/sua/postal-cards/validate-addresses', { addressIds });
     } catch (error) {
-      console.log('Validate addresses API call failed, using mock validation:', error);
-      this.mockValidateAddresses(addressIds);
+      console.error('Validate addresses API call failed:', error);
+      
+      if (error instanceof Error && error.message.includes('Session expired')) {
+        throw error;
+      }
+      
+      throw new Error('Failed to validate addresses. Please try again.');
     }
-  }
-
-  private mockValidateAddresses(addressIds: string[]): void {
-    console.log('Validating addresses:', addressIds);
   }
 
   async checkDuplicates(address: Partial<Address>): Promise<Address[]> {
     try {
-      // Try to make actual API call to backend
-      const data = await httpService.post('/addresses/check-duplicates', address);
-      return data;
+      const data = await httpService.post('/sua/postal-cards/check-duplicates', address);
+      return data || [];
     } catch (error) {
-      console.log('Check duplicates API call failed, using mock check:', error);
-      return this.mockCheckDuplicates(address);
+      console.error('Check duplicates API call failed:', error);
+      
+      if (error instanceof Error && error.message.includes('Session expired')) {
+        throw error;
+      }
+      
+      throw new Error('Failed to check for duplicates. Please try again.');
     }
-  }
-
-  private mockCheckDuplicates(address: Partial<Address>): Address[] {
-    // Mock duplicate check
-    return [];
   }
 }
 

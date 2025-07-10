@@ -8,7 +8,7 @@ import { clsx } from 'clsx';
 const navigationItems = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Campaigns', href: '/campaigns', icon: Mail },
-  { name: 'Lists', href: '/addresses', icon: Users },
+  { name: 'Addresses', href: '/addresses', icon: Users },
   { name: 'Outscrapper', href: '/outscrapper', icon: Database },
   { name: 'Analytics', href: '/analytics', icon: BarChart3, comingSoon: true },
 ];

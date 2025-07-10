@@ -1,4 +1,4 @@
-import { OutscrapperFetch, OutscrapperFilters, Address } from '../types';
+import { OutscrapperFilters, Address } from '../types';
 import { httpService } from './httpService';
 import { STATE_NAME_TO_ABBR } from '../config/constants';
 
@@ -50,59 +50,43 @@ class OutscrapperService {
     
     // Mock data for demo purposes since we don't have real API key
     const mockAddresses: Address[] = Array.from({ length: filters.limit }, (_, i) => ({
-        id: `outscrapper-${Date.now()}-${i}`,
-        businessName: `Business ${i + 1}`,
-        contactName: `Contact ${i + 1}`,
-        street: `${100 + i} Main Street`,
+        id: i + 1,
+        name: `Business ${i + 1} - Example Restaurant`,
+        place_id: `ChIJexample${i}`,
+        google_id: `0x88d9b552f4d3efad:0xd0eaf60b52e0fee${i}`,
+        full_address: `${100 + i} Business Street, ${filters.city || 'Demo City'}, ${stateAbbr} 90210`,
+        street: `${100 + i} Business Street`,
+        postal_code: `9021${i % 10}`,
+        country_code: "US",
+        country: "United States of America",
         city: filters.city || 'Demo City',
-        state: stateAbbr,
-        zipCode: `9000${i}`,
-        phone: `(555) 000-${String(i).padStart(4, '0')}`,
-        email: `contact${i + 1}@business.com`,
-        source: 'outscrapper',
-        status: 'pending',
-        createdAt: new Date().toISOString(),
-        campaigns: []
+        state: stateAbbr === 'CA' ? 'California' : 'Demo State',
+        us_state: stateAbbr === 'CA' ? 'California' : 'Demo State',
+        latitude: `34.0522${i}`,
+        longitude: `-118.2437${i}`,
+        time_zone: "America/Los_Angeles",
+        category: filters.businessType || ['restaurants', 'retail', 'services', 'healthcare'][i % 4],
+        rating: (3.5 + Math.random() * 1.5).toFixed(1),
+        location_link: `https://www.google.com/maps/place/Business+${i + 1}`,
+        phone: `+1 555-000-${String(i).padStart(4, '0')}`,
+        site: `https://business${i + 1}.com`,
+        description: i % 3 === 0 ? `Description for business ${i + 1}` : null,
+        reviews: Math.floor(Math.random() * 1000) + 10,
+        working_hours: {
+          "Monday": "9AM-9PM",
+          "Tuesday": "9AM-9PM",
+          "Wednesday": "9AM-9PM",
+          "Thursday": "9AM-9PM",
+          "Friday": "9AM-10PM",
+          "Saturday": "9AM-10PM",
+          "Sunday": "10AM-8PM"
+        },
+        business_status: "OPERATIONAL",
+        created_at: new Date(Date.now() - i * 86400000).toISOString(),
+        updated_at: new Date(Date.now() - i * 43200000).toISOString()
       }));
 
       return mockAddresses;
-  }
-
-  async getFetchHistory(): Promise<OutscrapperFetch[]> {
-    try {
-      // Try to make actual API call to backend
-      const data = await httpService.get('/sua/postal-cards/search-postal-address-history');
-      return data;
-    } catch (error) {
-      console.log('Postal address history API call failed, using mock data:', error);
-      return this.getMockFetchHistory();
-    }
-  }
-
-  private getMockFetchHistory(): OutscrapperFetch[] {
-    // Mock fetch history
-    return [
-      {
-        id: '1',
-        query: 'restaurants in Los Angeles',
-        filters: { state: 'California', city: 'Los Angeles', businessType: 'Restaurant', limit: 100 },
-        status: 'completed',
-        recordsFetched: 95,
-        creditsUsed: 10,
-        createdAt: new Date(Date.now() - 86400000).toISOString(),
-        completedAt: new Date(Date.now() - 86400000 + 300000).toISOString()
-      },
-      {
-        id: '2',
-        query: 'real estate agencies in San Francisco',
-        filters: { state: 'California', city: 'San Francisco', businessType: 'Real Estate', limit: 50 },
-        status: 'completed',
-        recordsFetched: 48,
-        creditsUsed: 5,
-        createdAt: new Date(Date.now() - 172800000).toISOString(),
-        completedAt: new Date(Date.now() - 172800000 + 250000).toISOString()
-      }
-    ];
   }
 
   async getCreditsUsage(): Promise<{ used: number; total: number }> {
