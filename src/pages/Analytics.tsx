@@ -1,22 +1,23 @@
 import React from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import { BarChart } from 'recharts';
 import { TrendingUp, DollarSign, Mail, Users, Target } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
-const monthlyData = [
-  { month: 'Jan', campaigns: 4, sent: 1200, delivered: 1140, cost: 1800 },
-  { month: 'Feb', campaigns: 6, sent: 1800, delivered: 1710, cost: 2700 },
-  { month: 'Mar', campaigns: 3, sent: 900, delivered: 855, cost: 1350 },
-  { month: 'Apr', campaigns: 8, sent: 2400, delivered: 2280, cost: 3600 },
-  { month: 'May', campaigns: 5, sent: 1500, delivered: 1425, cost: 2250 },
-  { month: 'Jun', campaigns: 7, sent: 2100, delivered: 1995, cost: 3150 },
-];
+// Data for future chart implementations
+// const monthlyData = [
+//   { month: 'Jan', campaigns: 4, sent: 1200, delivered: 1140, cost: 1800 },
+//   { month: 'Feb', campaigns: 6, sent: 1800, delivered: 1710, cost: 2700 },
+//   { month: 'Mar', campaigns: 3, sent: 900, delivered: 855, cost: 1350 },
+//   { month: 'Apr', campaigns: 8, sent: 2400, delivered: 2280, cost: 3600 },
+//   { month: 'May', campaigns: 5, sent: 1500, delivered: 1425, cost: 2250 },
+//   { month: 'Jun', campaigns: 7, sent: 2100, delivered: 1995, cost: 3150 },
+// ];
 
-const sourceData = [
-  { name: 'Outscrapper', value: 1247, color: '#8b5cf6' },
-  { name: 'CSV Import', value: 843, color: '#10B981' },
-  { name: 'Manual Entry', value: 456, color: '#ec4899' },
-];
+// const sourceData = [
+//   { name: 'Outscrapper', value: 1247, color: '#8b5cf6' },
+//   { name: 'CSV Import', value: 843, color: '#10B981' },
+//   { name: 'Manual Entry', value: 456, color: '#ec4899' },
+// ];
 
 const deliveryData = [
   { month: 'Jan', sent: 2400, delivered: 2280, cost: 1800 },

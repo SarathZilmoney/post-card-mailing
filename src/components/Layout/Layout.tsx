@@ -1,6 +1,5 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { Toaster } from 'react-hot-toast';
 import { useTheme } from '../../context/ThemeContext';
@@ -14,8 +13,7 @@ export const Layout: React.FC = () => {
         ? 'bg-gradient-to-br from-dark-950 via-dark-900 to-dark-800' 
         : 'bg-gradient-light-brand'
     }`}>
-      {/* Sidebar - Hidden for horizontal nav experiment */}
-      {/* <Sidebar /> */}
+
       
       <div className="flex flex-col">
         <Header />

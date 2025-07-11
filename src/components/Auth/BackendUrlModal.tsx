@@ -12,7 +12,6 @@ interface BackendUrlModalProps {
 export const BackendUrlModal: React.FC<BackendUrlModalProps> = ({ isOpen, onClose }) => {
   const { isDark } = useTheme();
   const [backendUrl, setBackendUrl] = useState(urlService.getTempBackendUrl() || '');
-  const [isLoading, setIsLoading] = useState(false);
 
   const handleSave = async () => {
     if (!backendUrl.trim()) {
@@ -20,30 +19,16 @@ export const BackendUrlModal: React.FC<BackendUrlModalProps> = ({ isOpen, onClos
       return;
     }
 
-    setIsLoading(true);
-    try {
-      // Basic URL validation
-      new URL(backendUrl);
-      
-      // Test connection
-      const testResponse = await fetch(`${backendUrl}/health`);
-      if (!testResponse.ok) {
-        throw new Error('Backend health check failed');
-      }
-
-      urlService.setTempBackendUrl(backendUrl);
-      toast.success('Backend URL configured successfully');
-      onClose();
-    } catch (error) {
-      console.error('Backend URL test failed:', error);
-      toast.error('Failed to connect to backend. Please check the URL.');
-    } finally {
-      setIsLoading(false);
-    }
+    // Just save the URL directly without any validation
+    urlService.setTempBackendUrl(backendUrl);
+    toast.success('Backend URL saved successfully');
+    onClose();
   };
 
   const handleReset = () => {
+    // Reset to default URL from constants
     urlService.clearTempBackendUrl();
+    const defaultUrl = urlService.getDefaultBackendUrl();
     setBackendUrl('');
     toast.success('Backend URL reset to default');
     onClose();
@@ -171,15 +156,10 @@ export const BackendUrlModal: React.FC<BackendUrlModalProps> = ({ isOpen, onClos
             </button>
             <button
               onClick={handleSave}
-              disabled={isLoading}
-              className="px-4 py-2 text-sm rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2"
+              className="px-4 py-2 text-sm rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 transition-all duration-200 flex items-center gap-2"
             >
-              {isLoading ? (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <CheckCircle className="h-4 w-4" />
-              )}
-              {isLoading ? 'Testing...' : 'Save & Test'}
+              <CheckCircle className="h-4 w-4" />
+              Save
             </button>
           </div>
         </div>

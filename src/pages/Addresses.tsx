@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Plus, Search, Filter, Upload, Download, Eye, Trash2, User, MailIcon, Star, MapPin, Phone, Globe, AlertCircle, ChevronDown, ChevronUp, Clock, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Upload, Eye, Trash2, User, MailIcon, Star, MapPin, Phone, Globe, AlertCircle, ChevronUp, Clock, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAddresses } from '../hooks/useAddresses';
 import { useTheme } from '../context/ThemeContext';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
+import { alertService } from '../services/alertService';
 
 export const Addresses: React.FC = () => {
   const { addresses, total, currentPage, totalPages, loading, error, goToPage, goToNextPage, goToPreviousPage, deleteAddress, importAddresses } = useAddresses();
@@ -59,11 +60,53 @@ export const Addresses: React.FC = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Reset the input value to allow selecting the same file again
+    event.target.value = '';
+
+    // Validate file type - only accept Excel files
+    const allowedTypes = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+      'application/vnd.ms-excel', // .xls
+    ];
+    
+    const fileExtension = file.name.toLowerCase().split('.').pop();
+    const isValidExtension = fileExtension === 'xlsx' || fileExtension === 'xls';
+    const isValidMimeType = allowedTypes.includes(file.type);
+
+    if (!isValidExtension && !isValidMimeType) {
+      alertService.error('Please select a valid Excel file (.xlsx or .xls)');
+      return;
+    }
+
+    // Check file size (max 10MB)
+    const maxSizeInBytes = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSizeInBytes) {
+      alertService.error('File size must be less than 10MB');
+      return;
+    }
+
+    // Show loading alert
+    const loadingId = alertService.loading('Uploading Excel file...');
+
     try {
       const imported = await importAddresses(file);
-      toast.success(`Imported ${imported.length} addresses successfully`);
+      
+      // Hide loading alert
+      if (loadingId) {
+        alertService.hide(loadingId);
+      }
+      
+      // Show success alert
+      alertService.success(`Successfully imported ${imported.length} addresses from Excel file`);
     } catch (error) {
-      toast.error('Failed to import addresses');
+      // Hide loading alert
+      if (loadingId) {
+        alertService.hide(loadingId);
+      }
+      
+      // Show error alert
+      const errorMessage = error instanceof Error ? error.message : 'Failed to import addresses from Excel file';
+      alertService.error(errorMessage);
     }
   };
 
@@ -265,7 +308,7 @@ export const Addresses: React.FC = () => {
     const pages = [];
     const maxVisiblePages = 5;
     let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
 
     // Adjust start page if we're near the end
     if (endPage - startPage + 1 < maxVisiblePages) {
@@ -484,22 +527,14 @@ export const Addresses: React.FC = () => {
               : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50 hover:text-gray-900'
           } text-sm font-medium rounded-lg cursor-pointer transition-all duration-200`}>
             <Upload className="h-4 w-4 mr-2" />
-            Upload CSV
+            Upload Excel
             <input
               type="file"
-              accept=".csv"
+              accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
               onChange={handleFileUpload}
               className="hidden"
             />
           </label>
-          <button className={`inline-flex items-center px-4 py-2 border ${
-            isDark 
-              ? 'border-dark-600 text-gray-300 bg-dark-800/50 hover:bg-dark-700/50 hover:text-white' 
-              : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50 hover:text-gray-900'
-          } text-sm font-medium rounded-lg transition-all duration-200`}>
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </button>
           <button onClick={handleAddAddress} className="inline-flex items-center px-4 py-2 btn-gradient text-sm font-medium rounded-lg text-white">
             <User className="h-4 w-4 mr-2" />
             Add Address
@@ -747,7 +782,7 @@ export const Addresses: React.FC = () => {
               <p className={`${
                 isDark ? 'text-gray-400' : 'text-gray-600'
               } mb-6`}>
-                Get started by adding your first address or importing from CSV
+                Get started by adding your first address or importing from Excel
               </p>
             </div>
           </div>

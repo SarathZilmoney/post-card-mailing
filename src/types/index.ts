@@ -19,9 +19,21 @@ export interface LoginResponse {
   data: {
     token: string;
     admin: User;
-    two_factor: any[];
+    two_factor: string[];
     admin_uuid: string;
   };
+}
+
+export interface CampaignRun {
+  runNumber: number;
+  startedAt: string;
+  completedAt?: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  sentCount: number;
+  deliveredCount: number;
+  returnedCount: number;
+  cost: number;
+  errorMessage?: string;
 }
 
 export interface Campaign {
@@ -39,6 +51,14 @@ export interface Campaign {
   cost: number;
   category?: string;
   targetAddressCount?: number;
+  zipCode?: string;
+  // Run tracking fields
+  currentRun: number;
+  totalRuns: number;
+  maxRuns: number;
+  runHistory: CampaignRun[];
+  canRunAgain: boolean;
+  nextRunAvailable: boolean;
 }
 
 export interface Address {

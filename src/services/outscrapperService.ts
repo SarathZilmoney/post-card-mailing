@@ -18,10 +18,10 @@ class OutscrapperService {
       const endpoint = `/sua/postal-cards/search-postal-address`;
       
       // Try to make actual POST API call to backend with request body
-      const data = await httpService.post(endpoint, requestBody);
+      const data = await httpService.post(endpoint, requestBody) as Address[];
       return data;
     } catch (error) {
-      console.log('Postal address search API call failed, using mock data:', error);
+      // Fall back to mock data if API fails
       return this.mockFetchAddresses(filters);
     }
   }
@@ -92,10 +92,10 @@ class OutscrapperService {
   async getCreditsUsage(): Promise<{ used: number; total: number }> {
     try {
       // Try to make actual API call to backend
-      const data = await httpService.get('/sua/postal-cards/search-postal-address-credits');
+      const data = await httpService.get('/sua/postal-cards/search-postal-address-credits') as { used: number; total: number };
       return data;
     } catch (error) {
-      console.log('Postal address credits API call failed, using mock data:', error);
+      // Fall back to mock data if API fails
       return this.getMockCreditsUsage();
     }
   }

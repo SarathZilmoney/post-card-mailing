@@ -35,9 +35,9 @@ export const LoginForm: React.FC = () => {
       await login(data.email, data.password);
       toast.success('Welcome back!');
       navigate(from, { replace: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Login error:', error);
-      const errorMessage = error?.message || 'Invalid credentials. Please try again.';
+      const errorMessage = error instanceof Error ? error.message : 'Invalid credentials. Please try again.';
       toast.error(errorMessage);
       setError('email', { message: errorMessage });
     }
