@@ -43,31 +43,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const initializeAuth = async () => {
       try {
         const token = localStorage.getItem('token');
-        if (token) {
-          // Authentication validation disabled - assume token is valid for now
-          // If token is invalid, 401 errors from API calls will trigger logout
-          // Since we can't validate the token, create a minimal user object
-          const user: User = {
-            id: 0,
-            email: 'user@example.com',
-            nick_name: 'User',
-            admin_type: 'user',
-            created_at: null,
-            updated_at: new Date().toISOString(),
-            added_by_admin: null,
-            status: 1,
-            deleted_at: null,
-            admin_department: null,
-            admin_uuid: 'temp-uuid'
-          };
-          
-          dispatch({ type: 'LOGIN_SUCCESS', payload: user });
+        const userData = localStorage.getItem('user');
+        
+        if (token && userData) {
+          try {
+            // Parse the stored user data
+            const user: User = JSON.parse(userData);
+            dispatch({ type: 'LOGIN_SUCCESS', payload: user });
+          } catch (parseError) {
+            console.error('Failed to parse stored user data:', parseError);
+            // Clear invalid data
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            dispatch({ type: 'SET_LOADING', payload: false });
+          }
         } else {
           dispatch({ type: 'SET_LOADING', payload: false });
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
         localStorage.removeItem('token');
+        localStorage.removeItem('user');
         dispatch({ type: 'SET_LOADING', payload: false });
       }
     };
@@ -79,13 +75,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       dispatch({ type: 'LOGIN_START' });
       const { user, token } = await authService.login(email, password);
+      
+      // Store both token and user data
       localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      
       dispatch({ type: 'LOGIN_SUCCESS', payload: user });
       return Promise.resolve();
-    } catch (error: any) {
+    } catch (error: unknown) {
       // If it's a CORS error, logout and redirect to login
-      if (error?.name === 'CORSError' || error?.message === 'CORS_ERROR') {
-        console.log('CORS error detected during login, logging out and redirecting');
+      if (error instanceof Error && (error.name === 'CORSError' || error.message === 'CORS_ERROR')) {
+        // Handle CORS error during login
         await logout();
         // Force redirect to login page
         if (typeof window !== 'undefined') {
@@ -106,7 +106,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error('Logout error:', error);
     }
+    
+    // Clear both token and user data
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    
     dispatch({ type: 'LOGOUT' });
   };
 

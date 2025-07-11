@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Address } from '../types';
 import { addressService } from '../services/addressService';
 
-export const useAddresses = (filters?: any) => {
+export const useAddresses = (filters?: Record<string, unknown>) => {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);

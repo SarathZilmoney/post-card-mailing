@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useForm } from 'react-hook-form';
-import { Calendar, FileText, Upload, X, CheckCircle, AlertCircle, Loader2, Users, Tag, ExternalLink } from 'lucide-react';
+import { Calendar, FileText, Upload, X, CheckCircle, Loader2, Users, Tag, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCampaigns } from '../../hooks/useCampaigns';
 import { useTheme } from '../../context/ThemeContext';
@@ -24,6 +24,7 @@ interface CreateCampaignFormData {
   category: string;
   targetAddressCount: number;
   postcardImage: File;
+  zipCode: string;
 }
 
 interface ImageValidationResult {
@@ -110,7 +111,8 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
       description: editCampaign?.description || '',
       startDate: editCampaign?.scheduledDate || new Date().toISOString().split('T')[0],
       category: editCampaign?.category || '',
-      targetAddressCount: editCampaign?.targetAddressCount || 100
+      targetAddressCount: editCampaign?.targetAddressCount || 100,
+      zipCode: editCampaign?.zipCode || ''
     }
   });
 
@@ -118,6 +120,7 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
   const watchedDescription = watch('description');
   const watchedCategory = watch('category');
   const watchedTargetAddressCount = watch('targetAddressCount');
+  const watchedZipCode = watch('zipCode');
 
   // Load categories when modal opens
   useEffect(() => {
@@ -134,7 +137,8 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
         description: editCampaign?.description || '',
         startDate: editCampaign?.scheduledDate || new Date().toISOString().split('T')[0],
         category: editCampaign?.category || '',
-        targetAddressCount: editCampaign?.targetAddressCount || 100
+        targetAddressCount: editCampaign?.targetAddressCount || 100,
+        zipCode: editCampaign?.zipCode || ''
       });
       
       // Clear image state for new campaign or when switching modes
@@ -348,6 +352,8 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
       formData.append('description', data.description.trim());
       formData.append('startDate', data.startDate);
       formData.append('category', data.category?.trim() || '');
+      formData.append('targetAddressCount', data.targetAddressCount.toString());
+      formData.append('zipCode', data.zipCode.trim());
       
       // For edit mode, add campaign ID
       if (isEditMode && editCampaign) {
@@ -592,6 +598,31 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
                     Maximum available: {selectedCategory.address_count} addresses
                   </p>
                 )}
+              </div>
+
+              {/* Zip Code */}
+              <div>
+                <label className={`block text-sm font-medium ${
+                  isDark ? 'text-gray-200' : 'text-gray-700'
+                } mb-2`}>Zip Code</label>
+                <input
+                  {...register('zipCode', {
+                    pattern: {
+                      value: /^[0-9]{5}$/,
+                      message: 'Please enter a valid 5-digit zip code'
+                    }
+                  })}
+                  type="text"
+                  className={`block w-full px-4 py-3 ${
+                    isDark 
+                      ? 'bg-white/5 border-white/10 text-white placeholder-gray-400' 
+                      : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500'
+                  } rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-300 ${
+                    isDark ? 'hover:bg-white/10' : 'hover:bg-gray-100'
+                  }`}
+                  placeholder="Enter zip code (e.g., 10001)"
+                />
+                {errors.zipCode && <p className="text-xs text-red-400 mt-1">{errors.zipCode.message}</p>}
               </div>
             </div>
             

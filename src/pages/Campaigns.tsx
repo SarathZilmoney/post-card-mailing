@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Search, Filter, Eye, Edit, Trash2, Play, Pause, MoreHorizontal, Mail, PlayCircle, Square } from 'lucide-react';
+import { Plus, Search, Filter, Eye, Edit, Trash2, MoreHorizontal, Mail, PlayCircle, Square, RotateCcw, CheckCircle } from 'lucide-react';
 import { useCampaigns } from '../hooks/useCampaigns';
 import { useTheme } from '../context/ThemeContext';
 import { useAlert } from '../context/AlertContext';
@@ -7,15 +7,17 @@ import { Campaign } from '../types';
 import { formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
 import { CampaignModal } from '../components/Campaigns/CampaignModal';
+import { RunTrackingDisplay } from '../components/Campaigns/RunTrackingDisplay';
 
 export const Campaigns: React.FC = () => {
-  const { campaigns, loading, deleteCampaign, updateCampaign, runCampaign, stopCampaign, refetch } = useCampaigns();
+  const { campaigns, loading, deleteCampaign, updateCampaign, runCampaign, stopCampaign, refetch, getRunHistory } = useCampaigns();
   const { isDark } = useTheme();
   const alert = useAlert();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
+  const [expandedCampaigns, setExpandedCampaigns] = useState<Set<string>>(new Set());
 
 
 
@@ -59,38 +61,48 @@ export const Campaigns: React.FC = () => {
     });
   };
 
-  const handleStatusToggle = async (id: string, currentStatus: string) => {
-    const newStatus = currentStatus === 'active' ? 'paused' : 'active';
-    try {
-      await updateCampaign(id, { status: newStatus });
-      toast.success(`Campaign ${newStatus === 'active' ? 'activated' : 'paused'}`);
-    } catch (error) {
-      toast.error('Failed to update campaign status');
-    }
-  };
+
 
   const handleRunCampaign = async (id: string, campaignName: string) => {
+    const campaign = campaigns.find(c => c.id === id);
+    if (!campaign) return;
+
+    // Check if campaign can run again
+    if (!campaign.canRunAgain) {
+      alert.error('This campaign has already completed all 3 runs', {
+        title: 'Campaign Completed',
+        duration: 5000
+      });
+      return;
+    }
+
+    const runNumber = campaign.currentRun + 1;
+    const isFirstRun = campaign.currentRun === 0;
+    const isLastRun = runNumber === campaign.maxRuns;
+    
     alert.showAlert({
       type: 'warning',
-      title: 'Start Campaign',
-      message: `Are you sure you want to run "${campaignName}"? This will start sending postcards to the selected addresses.`,
-      confirmText: 'Start Campaign',
+      title: isFirstRun ? 'Start Campaign' : `Start Run ${runNumber}`,
+      message: `Are you sure you want to ${isFirstRun ? 'start' : `run ${runNumber} of`} "${campaignName}"? ${
+        isLastRun ? 'This will be the final run.' : `This will be run ${runNumber} of ${campaign.maxRuns}.`
+      } Postcards will be sent to the selected addresses.`,
+      confirmText: isFirstRun ? 'Start Campaign' : `Start Run ${runNumber}`,
       cancelText: 'Cancel',
       onConfirm: async () => {
         try {
           const response = await runCampaign(id);
           
           if (response.success) {
-            const successMessage = response.message || 'Campaign started successfully!';
+            const successMessage = response.message || `Campaign run ${runNumber} started successfully!`;
             
             // Show both toast and success alert
             toast.success(successMessage);
             alert.success(successMessage, {
-              title: 'Campaign Started',
+              title: isFirstRun ? 'Campaign Started' : `Run ${runNumber} Started`,
               duration: 4000
             });
           } else {
-            const errorMessage = response.message || 'Failed to start campaign';
+            const errorMessage = response.message || `Failed to start campaign run ${runNumber}`;
             toast.error(errorMessage);
             alert.error(errorMessage, {
               title: 'Campaign Start Failed',
@@ -98,7 +110,7 @@ export const Campaigns: React.FC = () => {
             });
           }
         } catch (error: any) {
-          const errorMessage = error?.message || 'Failed to start campaign';
+          const errorMessage = error?.message || `Failed to start campaign run ${runNumber}`;
           toast.error(errorMessage);
           alert.error(errorMessage, {
             title: 'Campaign Start Failed',
@@ -137,6 +149,8 @@ export const Campaigns: React.FC = () => {
     setEditingCampaign(campaign);
     setModalOpen(true);
   };
+
+
 
   const handleModalClose = () => {
     setModalOpen(false);
@@ -411,9 +425,18 @@ export const Campaigns: React.FC = () => {
               </div>
             </div>
 
+                        {/* Run Progress Display */}
+            <div className="mb-4">
+              <RunTrackingDisplay 
+                campaign={campaign} 
+                onGetRunHistory={getRunHistory}
+                showExpanded={expandedCampaigns.has(campaign.id)}
+              />
+            </div>
+
             {/* Action Buttons */}
             <div className="flex gap-2">
-              {campaign.status === 'draft' || campaign.status === 'paused' ? (
+              {campaign.status === 'draft' || campaign.status === 'paused' || (campaign.canRunAgain && campaign.nextRunAvailable) ? (
                 (() => {
                   // Check if start date is in the future to determine button type
                   // Future date = "Start Early" (blue), Current/Past date = "Run Campaign" (green)
@@ -421,12 +444,14 @@ export const Campaigns: React.FC = () => {
                   today.setHours(0, 0, 0, 0);
                   const startDate = campaign.scheduledDate ? new Date(campaign.scheduledDate) : today;
                   const isFutureDate = startDate > today;
+                  const isFirstRun = campaign.currentRun === 0;
+                  const nextRunNumber = campaign.currentRun + 1;
                   
                   return (
                     <button
                       onClick={() => handleRunCampaign(campaign.id, campaign.name)}
                       className={`flex-1 flex items-center justify-center px-4 py-2.5 rounded-lg font-medium transition-all duration-200 shadow-sm ${
-                        isFutureDate
+                        isFutureDate && isFirstRun
                           ? isDark
                             ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-blue-500/20 hover:shadow-blue-500/30'
                             : 'bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white shadow-blue-500/20 hover:shadow-blue-500/30'
@@ -435,9 +460,16 @@ export const Campaigns: React.FC = () => {
                             : 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-green-500/20 hover:shadow-green-500/30'
                       } hover:shadow-lg transform hover:scale-105`}
                     >
-                      <PlayCircle className="h-5 w-5 mr-2" />
+                      {isFirstRun ? (
+                        <PlayCircle className="h-5 w-5 mr-2" />
+                      ) : (
+                        <RotateCcw className="h-5 w-5 mr-2" />
+                      )}
                       <span className="text-sm font-semibold">
-                        {isFutureDate ? 'Start Early' : 'Run Campaign'}
+                        {isFirstRun 
+                          ? (isFutureDate ? 'Start Early' : 'Run Campaign')
+                          : `Run ${nextRunNumber}`
+                        }
                       </span>
                     </button>
                   );
@@ -451,7 +483,7 @@ export const Campaigns: React.FC = () => {
                       : 'bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white shadow-red-500/20 hover:shadow-red-500/30'
                   } hover:shadow-lg transform hover:scale-105`}
                 >
-                                    <Square className="h-5 w-5 mr-2" />
+                  <Square className="h-5 w-5 mr-2" />
                   <span className="text-sm font-semibold">Stop Campaign</span>
                 </button>
               ) : campaign.status === 'completed' ? (
@@ -460,7 +492,10 @@ export const Campaigns: React.FC = () => {
                     ? 'bg-gray-700/50 text-gray-400 border border-gray-600'
                     : 'bg-gray-100 text-gray-500 border border-gray-200'
                 }`}>
-                  <span className="text-sm font-medium">Campaign Completed</span>
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  <span className="text-sm font-medium">
+                    {campaign.currentRun >= campaign.maxRuns ? 'All Runs Complete' : 'Campaign Completed'}
+                  </span>
                 </div>
               ) : null}
             </div>

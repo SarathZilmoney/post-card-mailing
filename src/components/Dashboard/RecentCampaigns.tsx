@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useCampaigns } from '../../hooks/useCampaigns';
 import { useTheme } from '../../context/ThemeContext';
 import { formatDistanceToNow } from 'date-fns';
+import { Clock } from 'lucide-react';
 
 export const RecentCampaigns: React.FC = () => {
   const { campaigns, loading } = useCampaigns();
@@ -91,11 +92,28 @@ export const RecentCampaigns: React.FC = () => {
               } mb-1`}>
                 {campaign.description}
               </p>
-              <p className={`text-xs ${
-                isDark ? 'text-gray-500' : 'text-light-500'
-              }`}>
-                {formatDistanceToNow(new Date(campaign.createdAt), { addSuffix: true })}
-              </p>
+              <div className="flex items-center justify-between">
+                <p className={`text-xs ${
+                  isDark ? 'text-gray-500' : 'text-light-500'
+                }`}>
+                  {formatDistanceToNow(new Date(campaign.createdAt), { addSuffix: true })}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Clock className="h-3 w-3 text-gray-400" />
+                  <span className={`text-xs ${
+                    isDark ? 'text-gray-400' : 'text-gray-600'
+                  }`}>
+                    Run {campaign.currentRun} of {campaign.maxRuns}
+                  </span>
+                  {campaign.canRunAgain && (
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                      isDark ? 'bg-green-500/20 text-green-400' : 'bg-green-100 text-green-600'
+                    }`}>
+                      Can run again
+                    </span>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         ))}

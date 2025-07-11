@@ -24,7 +24,7 @@ class HttpService {
     }
   }
 
-  private async handleResponse(response: Response): Promise<any> {
+  private async handleResponse(response: Response): Promise<unknown> {
     // Check for unauthorized error and logout user
     if (response.status === 401) {
       await this.handleUnauthorized();
@@ -52,12 +52,11 @@ class HttpService {
     return response.json();
   }
 
-  private async handleCorsError(error: any): Promise<void> {
+  private async handleCorsError(error: unknown): Promise<void> {
     // Only trigger logout for specific network errors that indicate auth issues
     if (error instanceof TypeError && error.message.includes('fetch')) {
       // Check if it's a CORS error specifically related to authentication
       if (error.message.includes('401') || error.message.includes('unauthorized')) {
-        console.log('Authentication error detected, logging out and redirecting');
         // Clear stored token
         localStorage.removeItem('token');
         
@@ -75,7 +74,7 @@ class HttpService {
     throw error;
   }
 
-  async get(endpoint: string, options?: RequestInit): Promise<any> {
+  async get(endpoint: string, options?: RequestInit): Promise<unknown> {
     const backendUrl = urlService.getBackendUrl();
     const url = `${backendUrl}${endpoint}`;
     
@@ -95,7 +94,7 @@ class HttpService {
     }
   }
 
-  async post(endpoint: string, data?: any, options?: RequestInit): Promise<any> {
+  async post(endpoint: string, data?: unknown, options?: RequestInit): Promise<unknown> {
     const backendUrl = urlService.getBackendUrl();
     const url = `${backendUrl}${endpoint}`;
     
@@ -105,7 +104,7 @@ class HttpService {
     if (isFormData) {
       // For FormData, don't set Content-Type header - let browser set it
       const authHeaders = this.getAuthHeaders();
-      const { 'Content-Type': _, ...headersWithoutContentType } = authHeaders as any;
+      const { 'Content-Type': contentType, ...headersWithoutContentType } = authHeaders as Record<string, string>;
       headers = headersWithoutContentType;
     } else {
       headers = this.getAuthHeaders();
@@ -128,7 +127,7 @@ class HttpService {
     }
   }
 
-  async put(endpoint: string, data?: any, options?: RequestInit): Promise<any> {
+  async put(endpoint: string, data?: unknown, options?: RequestInit): Promise<unknown> {
     const backendUrl = urlService.getBackendUrl();
     const url = `${backendUrl}${endpoint}`;
     
@@ -149,7 +148,7 @@ class HttpService {
     }
   }
 
-  async delete(endpoint: string, options?: RequestInit): Promise<any> {
+  async delete(endpoint: string, options?: RequestInit): Promise<unknown> {
     const backendUrl = urlService.getBackendUrl();
     const url = `${backendUrl}${endpoint}`;
     

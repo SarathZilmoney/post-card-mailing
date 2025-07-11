@@ -2,7 +2,7 @@ import { Address, AddressResponse } from '../types';
 import { httpService } from './httpService';
 
 class AddressService {
-  async getAddresses(page = 1, filters?: any): Promise<{ addresses: Address[]; total: number; currentPage: number; totalPages: number }> {
+  async getAddresses(page = 1, filters?: Record<string, unknown>): Promise<{ addresses: Address[]; total: number; currentPage: number; totalPages: number }> {
     try {
       const queryParams = new URLSearchParams({
         page: page.toString(),
@@ -12,7 +12,7 @@ class AddressService {
       const queryString = queryParams.toString();
       const endpoint = queryString ? `/sua/postal-cards/list-postal-addresses?${queryString}` : '/sua/postal-cards/list-postal-addresses';
       
-      const response: AddressResponse = await httpService.get(endpoint);
+      const response = await httpService.get(endpoint) as AddressResponse;
       
       if (response.success) {
         const responseData = response.data;
@@ -51,7 +51,7 @@ class AddressService {
 
   async createAddress(addressData: Partial<Address>): Promise<Address> {
     try {
-      const data = await httpService.post('/sua/postal-cards/create-address', addressData);
+      const data = await httpService.post('/sua/postal-cards/create-address', addressData) as Address;
       return data;
     } catch (error) {
       console.error('Create address API call failed:', error);
@@ -66,7 +66,7 @@ class AddressService {
 
   async updateAddress(id: string, updates: Partial<Address>): Promise<Address> {
     try {
-      const data = await httpService.put(`/sua/postal-cards/update-address/${id}`, updates);
+      const data = await httpService.put(`/sua/postal-cards/update-address/${id}`, updates) as Address;
       return data;
     } catch (error) {
       console.error('Update address API call failed:', error);
@@ -98,7 +98,10 @@ class AddressService {
       const formData = new FormData();
       formData.append('file', file);
       
-      const data = await httpService.post('/sua/postal-cards/import-addresses', formData);
+      // Add file type information for backend processing
+      formData.append('fileType', 'excel');
+      
+      const data = await httpService.post('/sua/postal-cards/import-addresses', formData) as Address[];
       return data || [];
     } catch (error) {
       console.error('Import addresses API call failed:', error);
@@ -107,7 +110,7 @@ class AddressService {
         throw error;
       }
       
-      throw new Error('Failed to import addresses. Please check your file format and try again.');
+      throw new Error('Failed to import addresses from Excel file. Please check your file format and try again.');
     }
   }
 
@@ -127,7 +130,7 @@ class AddressService {
 
   async checkDuplicates(address: Partial<Address>): Promise<Address[]> {
     try {
-      const data = await httpService.post('/sua/postal-cards/check-duplicates', address);
+      const data = await httpService.post('/sua/postal-cards/check-duplicates', address) as Address[];
       return data || [];
     } catch (error) {
       console.error('Check duplicates API call failed:', error);

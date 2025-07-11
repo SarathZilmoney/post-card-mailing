@@ -1,11 +1,11 @@
-import { Campaign, Address } from '../types';
+import { Campaign, Address, CampaignRun } from '../types';
 import { httpService } from './httpService';
 
 class CampaignService {
   async getCampaigns(): Promise<Campaign[]> {
     try {
       // Make API call to the backend
-      const response = await httpService.get('/sua/postal-cards/get-campaigns');
+      const response = await httpService.get('/sua/postal-cards/get-campaigns') as {success: boolean, data: any[]};
       
       // Handle the response format
       if (response.success && response.data) {
@@ -27,12 +27,12 @@ class CampaignService {
     }
   }
 
-  private mapBackendCampaignToFrontend(backendCampaign: any): Campaign {
+  private mapBackendCampaignToFrontend(backendCampaign: Record<string, unknown>): Campaign {
     // Parse postal addresses to count them
     let addressCount = 0;
     try {
       if (backendCampaign.postal_addresses) {
-        const addresses = JSON.parse(backendCampaign.postal_addresses);
+        const addresses = JSON.parse(backendCampaign.postal_addresses as string);
         addressCount = Array.isArray(addresses) ? addresses.length : 0;
       }
     } catch (error) {
@@ -59,22 +59,80 @@ class CampaignService {
       }
     };
 
+    // Parse run history from backend
+    const parseRunHistory = (runHistoryData: unknown): CampaignRun[] => {
+      try {
+        if (!runHistoryData) return [];
+        
+        const runs = Array.isArray(runHistoryData) ? runHistoryData : 
+                     typeof runHistoryData === 'string' ? JSON.parse(runHistoryData) : [];
+        
+        return runs.map((run: Record<string, unknown>) => ({
+          runNumber: run.run_number || 0,
+          startedAt: run.started_at || new Date().toISOString(),
+          completedAt: run.completed_at || undefined,
+          status: this.mapRunStatus(run.status),
+          sentCount: run.sent_count || 0,
+          deliveredCount: run.delivered_count || 0,
+          returnedCount: run.returned_count || 0,
+          cost: run.cost || 0,
+          errorMessage: run.error_message || undefined
+        }));
+      } catch (error) {
+        console.log('Failed to parse run history:', error);
+        return [];
+      }
+    };
+
+    const runHistory = parseRunHistory(backendCampaign.run_history);
+    const currentRun = (backendCampaign.current_run as number) || 0;
+    const maxRuns = 3; // Fixed to 3 runs
+    const totalRuns = runHistory.length;
+    const canRunAgain = currentRun < maxRuns && (backendCampaign.status as string) !== 'completed';
+    const nextRunAvailable = currentRun < maxRuns && (runHistory.length === 0 || runHistory[runHistory.length - 1]?.status === 'completed');
+
     return {
-      id: backendCampaign.id.toString(),
-      name: backendCampaign.campaign_name || '',
-      description: backendCampaign.description || '',
-      status: mapStatus(backendCampaign.status),
-      createdAt: backendCampaign.created_at || new Date().toISOString(),
-      scheduledDate: backendCampaign.start_date || undefined,
-      postcardDesign: backendCampaign.file_path || undefined,
-      category: backendCampaign.category || undefined,
+      id: (backendCampaign.id as number).toString(),
+      name: (backendCampaign.campaign_name as string) || '',
+      description: (backendCampaign.description as string) || '',
+      status: mapStatus(backendCampaign.status as string),
+      createdAt: (backendCampaign.created_at as string) || new Date().toISOString(),
+      scheduledDate: (backendCampaign.start_date as string) || undefined,
+      postcardDesign: (backendCampaign.file_path as string) || undefined,
+      category: (backendCampaign.category_id as string) || undefined, // category_id contains the category name
+      zipCode: (backendCampaign.zip_code as string) || undefined,
       addressCount,
       targetAddressCount: addressCount, // Use same count for now
-      sentCount: 0, // Backend doesn't provide this yet
-      deliveredCount: 0, // Backend doesn't provide this yet
-      returnedCount: 0, // Backend doesn't provide this yet
-      cost: 0 // Backend doesn't provide this yet
+      sentCount: runHistory.reduce((sum, run) => sum + run.sentCount, 0),
+      deliveredCount: runHistory.reduce((sum, run) => sum + run.deliveredCount, 0),
+      returnedCount: runHistory.reduce((sum, run) => sum + run.returnedCount, 0),
+      cost: runHistory.reduce((sum, run) => sum + run.cost, 0),
+      // Run tracking fields
+      currentRun,
+      totalRuns,
+      maxRuns,
+      runHistory,
+      canRunAgain,
+      nextRunAvailable
     };
+  }
+
+  private mapRunStatus(status: string): 'pending' | 'running' | 'completed' | 'failed' {
+    switch (status?.toLowerCase()) {
+      case 'pending':
+        return 'pending';
+      case 'running':
+      case 'active':
+        return 'running';
+      case 'completed':
+      case 'finished':
+        return 'completed';
+      case 'failed':
+      case 'error':
+        return 'failed';
+      default:
+        return 'pending';
+    }
   }
 
   async createCampaign(campaignData: Partial<Campaign> | FormData): Promise<{success: boolean, message: string}> {
@@ -105,7 +163,13 @@ class CampaignService {
         payload.append('campaign_name', campaignName.trim());
         payload.append('description', description.trim());
         payload.append('start_date', startDate);
-        payload.append('category', 'Hospital'); // Temporary: always set category as Hospital
+        payload.append('category', category || 'Hospital'); // Use provided category or default
+        
+        // Add zip code if provided
+        const zipCode = campaignData.get('zipCode') as string;
+        if (zipCode?.trim()) {
+          payload.append('zip_code', zipCode.trim());
+        }
         
         // Postcard image is now required
         const file = campaignData.get('postcardImage') as File;
@@ -120,15 +184,9 @@ class CampaignService {
         
         payload.append('file', file);
         
-        // Debug log the payload
-        console.log('Campaign payload being sent:');
-        console.log('Note: Category temporarily hardcoded to "Hospital"');
-        for (const [key, value] of payload.entries()) {
-          if (value instanceof File) {
-            console.log(`${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
-          } else {
-            console.log(`${key}: ${value}`);
-          }
+        // Log payload for debugging in development
+        if (import.meta.env.DEV) {
+          console.log('Campaign payload being sent');
         }
         
       } else {
@@ -193,6 +251,12 @@ class CampaignService {
       payload.append('start_date', startDate);
       payload.append('category', category || 'Hospital'); // Use provided category or default to Hospital
       
+      // Add zip code if provided
+      const zipCode = campaignData.get('zipCode') as string;
+      if (zipCode?.trim()) {
+        payload.append('zip_code', zipCode.trim());
+      }
+      
       // File is optional for edit - only add if provided
       const file = campaignData.get('postcardImage') as File;
       if (file && file.size > 0) {
@@ -203,14 +267,9 @@ class CampaignService {
         payload.append('file', file);
       }
       
-      // Debug log the payload
-      console.log('Edit campaign payload being sent:');
-      for (const [key, value] of payload.entries()) {
-        if (value instanceof File) {
-          console.log(`${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
-        } else {
-          console.log(`${key}: ${value}`);
-        }
+      // Log payload for debugging in development
+      if (import.meta.env.DEV) {
+        console.log('Edit campaign payload being sent');
       }
       
       // Make API call to the edit endpoint
@@ -262,22 +321,27 @@ class CampaignService {
         campaign_id: id
       };
       
-      // Debug log the payload
-      console.log('Run campaign payload being sent:', payload);
+      // Log payload for debugging in development
+      if (import.meta.env.DEV) {
+        console.log('Run campaign payload being sent');
+      }
       
       // Make API call to the correct endpoint
       const response = await httpService.post('/sua/sent-postal-cards', payload);
       
       // Handle the response format
       if (response.success) {
+        // Map the returned campaign data if available
+        const campaign = response.campaign ? this.mapBackendCampaignToFrontend(response.campaign) : undefined;
+        
         return {
           success: true,
-          message: response.message || 'Campaign started successfully!',
-          campaign: response.campaign || undefined
+          message: response.message || 'Campaign run started successfully!',
+          campaign
         };
       } else {
         console.log('Campaign run failed:', response);
-        throw new Error(response.message || 'Failed to start campaign');
+        throw new Error(response.message || 'Failed to start campaign run');
       }
     } catch (error) {
       console.log('Run campaign API call failed:', error);
@@ -299,6 +363,32 @@ class CampaignService {
       }
       
       throw error;
+    }
+  }
+
+  async getRunHistory(id: string): Promise<CampaignRun[]> {
+    try {
+      const response = await httpService.get(`/sua/postal-cards/campaign-runs/${id}`) as {success: boolean, data: any[]};
+      
+      if (response.success && response.data) {
+        return response.data.map((run: Record<string, unknown>) => ({
+          runNumber: run.run_number || 0,
+          startedAt: run.started_at || new Date().toISOString(),
+          completedAt: run.completed_at || undefined,
+          status: this.mapRunStatus(run.status),
+          sentCount: run.sent_count || 0,
+          deliveredCount: run.delivered_count || 0,
+          returnedCount: run.returned_count || 0,
+          cost: run.cost || 0,
+          errorMessage: run.error_message || undefined
+        }));
+      } else {
+        console.log('Failed to fetch run history:', response);
+        return [];
+      }
+    } catch (error) {
+      console.log('Get run history API call failed:', error);
+      throw new Error('Failed to fetch campaign run history');
     }
   }
 
@@ -325,8 +415,10 @@ class CampaignService {
         campaign_id: id
       };
       
-      // Debug log the payload
-      console.log('Delete campaign payload being sent:', payload);
+      // Log payload for debugging in development
+      if (import.meta.env.DEV) {
+        console.log('Delete campaign payload being sent');
+      }
       
       // Make API call to the delete endpoint
       const response = await httpService.post('/sua/postal-cards/delete-campaigns', payload);

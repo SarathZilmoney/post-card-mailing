@@ -1,16 +1,16 @@
-import { AlertOptions } from '../types';
+import { AlertOptions, AlertContextType } from '../types';
 
 // This will be injected when the service is initialized
-let alertContext: any = null;
+let alertContext: AlertContextType | null = null;
 
-export const initializeAlertService = (context: any) => {
+export const initializeAlertService = (context: AlertContextType) => {
   alertContext = context;
 };
 
 class AlertService {
   private getContext() {
     if (!alertContext) {
-      console.warn('AlertService: Context not initialized. Make sure to call initializeAlertService.');
+      // Context not initialized - this is expected during app startup
       return null;
     }
     return alertContext;

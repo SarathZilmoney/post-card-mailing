@@ -86,6 +86,7 @@ class AuthService {
     
     // Clear any stored data
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
   }
 }
 

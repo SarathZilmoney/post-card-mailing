@@ -7,7 +7,6 @@ import {
   FileText, 
   Upload, 
   X, 
-  Image as ImageIcon,
   Save,
   ArrowLeft,
   AlertCircle,

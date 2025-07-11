@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Campaign } from '../types';
+import { Campaign, CampaignRun } from '../types';
 import { campaignService } from '../services/campaignService';
 
 export const useCampaigns = () => {
@@ -95,6 +95,14 @@ export const useCampaigns = () => {
     }
   };
 
+  const getRunHistory = async (id: string): Promise<CampaignRun[]> => {
+    try {
+      return await campaignService.getRunHistory(id);
+    } catch (err) {
+      throw err;
+    }
+  };
+
   useEffect(() => {
     fetchCampaigns();
   }, []);
@@ -109,6 +117,7 @@ export const useCampaigns = () => {
     updateCampaign,
     deleteCampaign,
     runCampaign,
-    stopCampaign
+    stopCampaign,
+    getRunHistory
   };
 };
