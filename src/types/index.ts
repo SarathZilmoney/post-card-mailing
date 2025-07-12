@@ -63,6 +63,7 @@ export interface Campaign {
 
 export interface Address {
   id: number;
+  encrypted_id: string;
   name: string;
   place_id: string;
   google_id: string;
