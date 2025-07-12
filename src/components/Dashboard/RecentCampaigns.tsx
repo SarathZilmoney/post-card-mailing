@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useCampaigns } from '../../hooks/useCampaigns';
 import { useTheme } from '../../context/ThemeContext';
 import { formatDistanceToNow } from 'date-fns';
-import { Clock } from 'lucide-react';
+import { Clock, Mail, Plus } from 'lucide-react';
 
 export const RecentCampaigns: React.FC = () => {
   const { campaigns, loading } = useCampaigns();
@@ -71,53 +71,82 @@ export const RecentCampaigns: React.FC = () => {
           </Link>
         </div>
       </div>
-      <div className={`divide-y ${
-        isDark ? 'divide-dark-600' : 'divide-light-300'
-      }`}>
-        {campaigns.slice(0, 5).map((campaign) => (
-          <div key={campaign.id} className="px-6 py-4">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center space-x-3 mb-2">
-                <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(campaign.status)}`}>
-                  {campaign.status.toUpperCase()}
-                </span>
-                <h4 className={`text-sm font-medium ${
-                  isDark ? 'text-white' : 'text-light-900'
-                } truncate`}>
-                  {campaign.name}
-                </h4>
-              </div>
-              <p className={`text-sm ${
-                isDark ? 'text-gray-400' : 'text-light-600'
-              } mb-1`}>
-                {campaign.description}
-              </p>
-              <div className="flex items-center justify-between">
-                <p className={`text-xs ${
-                  isDark ? 'text-gray-500' : 'text-light-500'
-                }`}>
-                  {formatDistanceToNow(new Date(campaign.createdAt), { addSuffix: true })}
-                </p>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-3 w-3 text-gray-400" />
-                  <span className={`text-xs ${
-                    isDark ? 'text-gray-400' : 'text-gray-600'
-                  }`}>
-                    Run {campaign.currentRun} of {campaign.maxRuns}
+      {campaigns.length > 0 ? (
+        <div className={`divide-y ${
+          isDark ? 'divide-dark-600' : 'divide-light-300'
+        }`}>
+          {campaigns.slice(0, 5).map((campaign) => (
+            <div key={campaign.id} className="px-6 py-4">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center space-x-3 mb-2">
+                  <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(campaign.status)}`}>
+                    {campaign.status.toUpperCase()}
                   </span>
-                  {campaign.canRunAgain && (
-                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                      isDark ? 'bg-green-500/20 text-green-400' : 'bg-green-100 text-green-600'
+                  <h4 className={`text-sm font-medium ${
+                    isDark ? 'text-white' : 'text-light-900'
+                  } truncate`}>
+                    {campaign.name}
+                  </h4>
+                </div>
+                <p className={`text-sm ${
+                  isDark ? 'text-gray-400' : 'text-light-600'
+                } mb-1`}>
+                  {campaign.description}
+                </p>
+                <div className="flex items-center justify-between">
+                  <p className={`text-xs ${
+                    isDark ? 'text-gray-500' : 'text-light-500'
+                  }`}>
+                    {formatDistanceToNow(new Date(campaign.createdAt), { addSuffix: true })}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-3 w-3 text-gray-400" />
+                    <span className={`text-xs ${
+                      isDark ? 'text-gray-400' : 'text-gray-600'
                     }`}>
-                      Can run again
+                      Run {campaign.currentRun} of {campaign.maxRuns}
                     </span>
-                  )}
+                    {campaign.canRunAgain && (
+                      <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                        isDark ? 'bg-green-500/20 text-green-400' : 'bg-green-100 text-green-600'
+                      }`}>
+                        Can run again
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
+          ))}
+        </div>
+      ) : (
+        <div className="px-6 py-12 text-center">
+          <div className="w-12 h-12 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-xl flex items-center justify-center mx-auto mb-4">
+            <Mail className="h-6 w-6 text-purple-400" />
           </div>
-        ))}
-      </div>
+          <h3 className={`text-sm font-medium ${
+            isDark ? 'text-white' : 'text-light-900'
+          } mb-2`}>
+            No campaigns yet
+          </h3>
+          <p className={`text-xs ${
+            isDark ? 'text-gray-400' : 'text-light-600'
+          } mb-4`}>
+            Create your first campaign to get started
+          </p>
+          <Link
+            to="/campaigns"
+            className={`inline-flex items-center px-3 py-2 text-xs font-medium rounded-lg ${
+              isDark 
+                ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700' 
+                : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600'
+            } text-white transition-all duration-200 hover:shadow-lg`}
+          >
+            <Plus className="h-3 w-3 mr-1" />
+            Create Campaign
+          </Link>
+        </div>
+      )}
     </div>
   );
 };
