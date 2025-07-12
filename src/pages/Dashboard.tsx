@@ -8,12 +8,12 @@ export const Dashboard: React.FC = () => {
   const { isDark } = useTheme();
 
   return (
-    <div className="space-y-6 animate-fadeIn">
+    <div className="space-y-4 sm:space-y-6 animate-fadeIn">
       <div>
-        <h1 className={`text-3xl font-bold ${
+        <h1 className={`text-2xl sm:text-3xl font-bold ${
           isDark ? 'gradient-text' : 'gradient-text-light'
         } mb-2`}>Dashboard</h1>
-        <p className={`${
+        <p className={`text-sm sm:text-base ${
           isDark ? 'text-gray-400' : 'text-light-600'
         }`}>
           Welcome back! Here's what's happening with your campaigns.
@@ -22,7 +22,7 @@ export const Dashboard: React.FC = () => {
 
       <DashboardStats />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
         <RecentCampaigns />
         <OutscrapperActivity />
       </div>

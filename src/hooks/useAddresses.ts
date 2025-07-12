@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Address } from '../types';
+import { Address, ImportAddressesResponse } from '../types';
 import { addressService } from '../services/addressService';
 
 export const useAddresses = (filters?: Record<string, unknown>) => {
@@ -82,11 +82,10 @@ export const useAddresses = (filters?: Record<string, unknown>) => {
 
   const importAddresses = async (file: File) => {
     try {
-      const imported = await addressService.importAddresses(file);
-      // Refresh the first page to show imported addresses
-      setCurrentPage(1);
-      await fetchAddresses(1);
-      return imported;
+      const response = await addressService.importAddresses(file);
+      // Note: Since import is now queued, we don't refresh immediately
+      // The addresses will be available once the job completes
+      return response;
     } catch (err) {
       throw err;
     }

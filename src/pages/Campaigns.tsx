@@ -205,23 +205,23 @@ export const Campaigns: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="space-y-6 animate-fadeIn">
+      <div className="space-y-4 sm:space-y-6 animate-fadeIn">
         <div className="animate-pulse">
-          <div className={`h-8 ${
+          <div className={`h-6 sm:h-8 ${
             isDark ? 'bg-dark-600' : 'bg-light-300'
           } rounded w-1/4 mb-6`}></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
             {[...Array(6)].map((_, i) => (
               <div key={i} className={`${
                 isDark ? 'glass-dark' : 'glass-light'
-              } rounded-2xl p-6`}>
-                <div className={`h-6 ${
+              } rounded-2xl p-4 sm:p-6`}>
+                <div className={`h-4 sm:h-6 ${
                   isDark ? 'bg-dark-600' : 'bg-light-300'
                 } rounded mb-3`}></div>
-                <div className={`h-4 ${
+                <div className={`h-3 sm:h-4 ${
                   isDark ? 'bg-dark-600' : 'bg-light-300'
                 } rounded mb-2`}></div>
-                <div className={`h-4 ${
+                <div className={`h-3 sm:h-4 ${
                   isDark ? 'bg-dark-600' : 'bg-light-300'
                 } rounded w-3/4`}></div>
               </div>
@@ -233,11 +233,11 @@ export const Campaigns: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 sm:space-y-8">
       {/* Page Header */}
       <div className="flex flex-col space-y-4 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
         <div>
-          <h1 className={`text-3xl font-bold ${
+          <h1 className={`text-2xl sm:text-3xl font-bold ${
             isDark ? 'text-white' : 'text-gray-900'
           }`}>
             Campaigns
@@ -255,16 +255,17 @@ export const Campaigns: React.FC = () => {
             isDark 
               ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700' 
               : 'bg-gradient-to-r from-brand-primary-600 to-brand-secondary-600 hover:from-brand-primary-700 hover:to-brand-secondary-700'
-          } text-white px-6 py-3 rounded-lg flex items-center space-x-2 font-medium transition-all duration-200 shadow-lg hover:shadow-xl`}
+          } text-white px-4 sm:px-6 py-3 rounded-lg flex items-center justify-center space-x-2 font-medium transition-all duration-200 shadow-lg hover:shadow-xl`}
         >
           <Plus className="h-5 w-5" />
-          <span>Create Campaign</span>
+          <span className="hidden sm:inline">Create Campaign</span>
+          <span className="sm:hidden">Create</span>
         </button>
       </div>
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1 max-w-md">
+        <div className="relative flex-1">
           <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${
             isDark ? 'text-gray-400' : 'text-gray-500'
           } h-5 w-5`} />
@@ -292,7 +293,7 @@ export const Campaigns: React.FC = () => {
               isDark 
                 ? 'bg-gray-800 border-gray-700 text-white' 
                 : 'bg-white border-gray-300 text-gray-900'
-            } rounded-lg px-4 py-3 focus:ring-2 focus:ring-brand-primary-500 focus:border-brand-primary-500 transition-all duration-200`}
+            } rounded-lg px-3 sm:px-4 py-3 focus:ring-2 focus:ring-brand-primary-500 focus:border-brand-primary-500 transition-all duration-200`}
           >
             <option value="all">All Status</option>
             <option value="draft">Draft</option>
@@ -304,18 +305,18 @@ export const Campaigns: React.FC = () => {
       </div>
 
       {/* Campaign Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
         {filteredCampaigns.map((campaign) => (
           <div key={campaign.id} className={`${
             isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-          } border rounded-xl p-6 hover:shadow-lg transition-all duration-300 group`}>
+          } border rounded-xl p-4 sm:p-6 hover:shadow-lg transition-all duration-300 group`}>
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
-                <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(campaign.status)}`}>
+                <span className={`inline-block px-2 sm:px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(campaign.status)}`}>
                   {getStatusText(campaign.status)}
                 </span>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1 sm:space-x-2">
                 {/* View Details Button */}
                 <button
                   className={`p-1 ${
@@ -354,9 +355,9 @@ export const Campaigns: React.FC = () => {
                   <Trash2 className="h-4 w-4" />
                 </button>
                 
-                {/* More Options Button */}
+                {/* More Options Button - Hidden on mobile */}
                 <button
-                  className={`p-1 ${
+                  className={`hidden sm:block p-1 ${
                     isDark 
                       ? 'text-gray-400 hover:text-purple-400 hover:bg-dark-800/50' 
                       : 'text-light-600 hover:text-brand-primary-600 hover:bg-light-200/60'
@@ -371,12 +372,12 @@ export const Campaigns: React.FC = () => {
             <div className="mb-4">
               <h3 className={`text-lg font-semibold ${
                 isDark ? 'text-white' : 'text-gray-900'
-              } mb-2`}>
+              } mb-2 line-clamp-1`}>
                 {campaign.name}
               </h3>
               <p className={`text-sm ${
                 isDark ? 'text-gray-400' : 'text-gray-600'
-              } mb-3`}>
+              } mb-3 line-clamp-2`}>
                 {campaign.description}
               </p>
               <p className={`text-xs ${
@@ -386,9 +387,9 @@ export const Campaigns: React.FC = () => {
               </p>
             </div>
 
-            <div className="grid grid-cols-3 gap-4 text-center mb-4">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center mb-4">
               <div>
-                <div className={`text-lg font-semibold ${
+                <div className={`text-base sm:text-lg font-semibold ${
                   isDark ? 'text-white' : 'text-gray-900'
                 }`}>
                   {campaign.addressCount || 0}
@@ -400,7 +401,7 @@ export const Campaigns: React.FC = () => {
                 </div>
               </div>
               <div>
-                <div className={`text-lg font-semibold ${
+                <div className={`text-base sm:text-lg font-semibold ${
                   isDark ? 'text-white' : 'text-gray-900'
                 }`}>
                   {campaign.sentCount || 0}
@@ -412,7 +413,7 @@ export const Campaigns: React.FC = () => {
                 </div>
               </div>
               <div>
-                <div className={`text-lg font-semibold ${
+                <div className={`text-base sm:text-lg font-semibold ${
                   isDark ? 'text-white' : 'text-gray-900'
                 }`}>
                   ${campaign.cost || 0}
@@ -425,7 +426,7 @@ export const Campaigns: React.FC = () => {
               </div>
             </div>
 
-                        {/* Run Progress Display */}
+            {/* Run Progress Display */}
             <div className="mb-4">
               <RunTrackingDisplay 
                 campaign={campaign} 
@@ -450,7 +451,7 @@ export const Campaigns: React.FC = () => {
                   return (
                     <button
                       onClick={() => handleRunCampaign(campaign.id, campaign.name)}
-                      className={`flex-1 flex items-center justify-center px-4 py-2.5 rounded-lg font-medium transition-all duration-200 shadow-sm ${
+                      className={`flex-1 flex items-center justify-center px-3 sm:px-4 py-2.5 rounded-lg font-medium transition-all duration-200 shadow-sm ${
                         isFutureDate && isFirstRun
                           ? isDark
                             ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-blue-500/20 hover:shadow-blue-500/30'
@@ -461,13 +462,13 @@ export const Campaigns: React.FC = () => {
                       } hover:shadow-lg transform hover:scale-105`}
                     >
                       {isFirstRun ? (
-                        <PlayCircle className="h-5 w-5 mr-2" />
+                        <PlayCircle className="h-4 sm:h-5 w-4 sm:w-5 mr-2" />
                       ) : (
-                        <RotateCcw className="h-5 w-5 mr-2" />
+                        <RotateCcw className="h-4 sm:h-5 w-4 sm:w-5 mr-2" />
                       )}
                       <span className="text-sm font-semibold">
                         {isFirstRun 
-                          ? (isFutureDate ? 'Start Early' : 'Run Campaign')
+                          ? (isFutureDate ? 'Start Early' : 'Run')
                           : `Run ${nextRunNumber}`
                         }
                       </span>
@@ -477,24 +478,30 @@ export const Campaigns: React.FC = () => {
               ) : campaign.status === 'active' ? (
                 <button
                   onClick={() => handleStopCampaign(campaign.id, campaign.name)}
-                  className={`flex-1 flex items-center justify-center px-4 py-2.5 rounded-lg font-medium transition-all duration-200 shadow-sm ${
+                  className={`flex-1 flex items-center justify-center px-3 sm:px-4 py-2.5 rounded-lg font-medium transition-all duration-200 shadow-sm ${
                     isDark
                       ? 'bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white shadow-red-500/20 hover:shadow-red-500/30'
                       : 'bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 text-white shadow-red-500/20 hover:shadow-red-500/30'
                   } hover:shadow-lg transform hover:scale-105`}
                 >
-                  <Square className="h-5 w-5 mr-2" />
-                  <span className="text-sm font-semibold">Stop Campaign</span>
+                  <Square className="h-4 sm:h-5 w-4 sm:w-5 mr-2" />
+                  <span className="text-sm font-semibold">
+                    <span className="hidden sm:inline">Stop Campaign</span>
+                    <span className="sm:hidden">Stop</span>
+                  </span>
                 </button>
               ) : campaign.status === 'completed' ? (
-                <div className={`flex-1 flex items-center justify-center px-4 py-2.5 rounded-lg ${
+                <div className={`flex-1 flex items-center justify-center px-3 sm:px-4 py-2.5 rounded-lg ${
                   isDark
                     ? 'bg-gray-700/50 text-gray-400 border border-gray-600'
                     : 'bg-gray-100 text-gray-500 border border-gray-200'
                 }`}>
                   <CheckCircle className="h-4 w-4 mr-2" />
                   <span className="text-sm font-medium">
-                    {campaign.currentRun >= campaign.maxRuns ? 'All Runs Complete' : 'Campaign Completed'}
+                    <span className="hidden sm:inline">
+                      {campaign.currentRun >= campaign.maxRuns ? 'All Runs Complete' : 'Campaign Completed'}
+                    </span>
+                    <span className="sm:hidden">Complete</span>
                   </span>
                 </div>
               ) : null}
@@ -505,15 +512,15 @@ export const Campaigns: React.FC = () => {
 
       {/* Empty State */}
       {filteredCampaigns.length === 0 && (
-        <div className="text-center py-12">
-          <div className="max-w-md mx-auto">
+        <div className="text-center py-8 sm:py-12">
+          <div className="max-w-md mx-auto px-4">
             <div className="w-16 h-16 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <Mail className="h-8 w-8 text-purple-400" />
             </div>
             <h3 className={`text-lg font-medium ${
               isDark ? 'text-white' : 'text-gray-900'
             } mb-2`}>No campaigns found</h3>
-            <p className={`${
+            <p className={`text-sm sm:text-base ${
               isDark ? 'text-gray-400' : 'text-gray-600'
             } mb-6`}>
               {searchTerm || statusFilter !== 'all' 
@@ -522,7 +529,7 @@ export const Campaigns: React.FC = () => {
             </p>
             <button
               onClick={() => setModalOpen(true)}
-              className="btn-gradient px-6 py-3 rounded-lg flex items-center space-x-2 mx-auto font-medium text-white transition-all duration-200"
+              className="btn-gradient px-4 sm:px-6 py-3 rounded-lg flex items-center space-x-2 mx-auto font-medium text-white transition-all duration-200"
             >
               <Plus className="h-5 w-5" />
               <span>Create Campaign</span>

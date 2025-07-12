@@ -22,7 +22,8 @@ export const Layout: React.FC = () => {
             ? 'bg-dark-900/30' 
             : 'bg-light-50/60 backdrop-blur-sm'
         }`}>
-          <div className="max-w-screen-2xl mx-auto px-8 py-6">
+
+          <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
             <Outlet />
           </div>
         </main>
