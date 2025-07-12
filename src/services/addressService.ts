@@ -1,4 +1,4 @@
-import { Address, AddressResponse } from '../types';
+import { Address, AddressResponse, ImportAddressesResponse } from '../types';
 import { httpService } from './httpService';
 
 class AddressService {
@@ -93,7 +93,7 @@ class AddressService {
     }
   }
 
-  async importAddresses(file: File): Promise<Address[]> {
+  async importAddresses(file: File): Promise<ImportAddressesResponse> {
     try {
       const formData = new FormData();
       formData.append('file', file);
@@ -101,8 +101,8 @@ class AddressService {
       // Add file type information for backend processing
       formData.append('fileType', 'excel');
       
-      const data = await httpService.post('/sua/postal-cards/import-addresses', formData) as Address[];
-      return data || [];
+      const data = await httpService.post('/sua/postal-cards/import-addresses', formData) as ImportAddressesResponse;
+      return data;
     } catch (error) {
       console.error('Import addresses API call failed:', error);
       

@@ -176,3 +176,9 @@ export interface AddressCategoriesResponse {
   data: AddressCategory[];
   total_categories: number;
 }
+
+export interface ImportAddressesResponse {
+  status: string;
+  message: string;
+  job_id: number;
+}
