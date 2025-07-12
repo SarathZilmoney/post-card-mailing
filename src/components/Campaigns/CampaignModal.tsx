@@ -170,11 +170,11 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
   const handleCategoryChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const value = event.target.value;
     
-    if (value === 'add-from-outscrapper') {
-      // Close modal and navigate to Outscrapper page
+    if (value === 'add-address') {
+      // Close modal and navigate to Address List page
       handleClose();
-      navigate('/outscrapper');
-      toast('Redirecting to Outscrapper to add addresses...', {
+      navigate('/addresses');
+      toast('Redirecting to Address List to add addresses...', {
         icon: '📍',
         duration: 3000,
       });
@@ -537,8 +537,8 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
                         </option>
                       ))
                     ) : !loadingCategories ? (
-                      <option value="add-from-outscrapper" className="text-blue-600">
-                        📍 Add addresses from Outscrapper
+                      <option value="add-address" className="text-blue-600">
+                        📍 Add address
                       </option>
                     ) : null}
                   </select>
@@ -554,7 +554,7 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
                     isDark ? 'text-gray-400' : 'text-gray-600'
                   } mt-1 flex items-center gap-1`}>
                     <ExternalLink className="h-3 w-3" />
-                    <span>No categories available. Use Outscrapper to add addresses first.</span>
+                    <span>No categories available. Add addresses first to create categories.</span>
                   </div>
                 )}
               </div>

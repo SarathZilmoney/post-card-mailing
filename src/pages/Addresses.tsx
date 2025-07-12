@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Search, Upload, Eye, Trash2, User, MailIcon, Star, MapPin, Phone, Globe, AlertCircle, ChevronUp, Clock, ExternalLink, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Upload, Eye, Trash2, User, MailIcon, Star, MapPin, Phone, Globe, AlertCircle, ChevronUp, Clock, ExternalLink, ChevronLeft, ChevronRight, ChevronDown, Filter } from 'lucide-react';
 import { useAddresses } from '../hooks/useAddresses';
 import { useTheme } from '../context/ThemeContext';
 import { useNavigate } from 'react-router-dom';
@@ -15,6 +15,22 @@ export const Addresses: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
+  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.filter-dropdown')) {
+        setCategoryDropdownOpen(false);
+        setStatusDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
   
   const filteredAddresses = addresses?.filter(address => {
     const matchesSearch = 
@@ -190,8 +206,8 @@ export const Addresses: React.FC = () => {
     return (
       <tr key={`${address.id}-expanded`} className={`${
         isDark ? 'bg-dark-900/50' : 'bg-gray-50/50'
-      } border-t-0`}>
-        <td colSpan={8} className="px-3 sm:px-6 py-4">
+      } border-t-0 animate-slideDown`}>
+        <td colSpan={8} className="px-3 sm:px-6 py-4 animate-fadeIn">
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
             {/* Location Details */}
             <div className={`${
@@ -211,6 +227,14 @@ export const Addresses: React.FC = () => {
                   <p className={`${
                     isDark ? 'text-gray-400' : 'text-gray-600'
                   } mt-1 break-words`}>{address.full_address}</p>
+                </div>
+                <div>
+                  <span className={`font-medium ${
+                    isDark ? 'text-gray-300' : 'text-gray-700'
+                  }`}>ZIP Code:</span>
+                  <p className={`${
+                    isDark ? 'text-gray-400' : 'text-gray-600'
+                  } mt-1`}>{address.postal_code}</p>
                 </div>
                 <div>
                   <span className={`font-medium ${
@@ -569,105 +593,230 @@ export const Addresses: React.FC = () => {
         isDark ? 'glass-dark' : 'glass bg-white/70 border-gray-200/50'
       } rounded-2xl`}>
         <div className="p-4 sm:p-6">
-          <div className="flex flex-col gap-4">
-            <div className="relative">
-              <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${
-                isDark ? 'text-gray-400' : 'text-gray-500'
-              } h-4 w-4`} />
-              <input
-                type="text"
-                placeholder="Search businesses..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className={`block w-full pl-10 pr-3 py-2 ${
-                  isDark 
-                    ? 'bg-dark-800/50 border-dark-600 text-white placeholder-gray-500' 
-                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
-                } rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200`}
-              />
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className={`${
-                  isDark 
-                    ? 'bg-dark-800/50 border-dark-600 text-white' 
-                    : 'bg-white border-gray-300 text-gray-900'
-                } rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 flex-1`}
-              >
-                <option value="all">All Status</option>
-                <option value="operational">Operational</option>
-                <option value="closed_temporarily">Closed Temporarily</option>
-                <option value="closed_permanently">Closed Permanently</option>
-              </select>
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className={`${
-                  isDark 
-                    ? 'bg-dark-800/50 border-dark-600 text-white' 
-                    : 'bg-white border-gray-300 text-gray-900'
-                } rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 flex-1`}
-              >
-                <option value="all">All Categories</option>
-                {categories.map(category => (
-                  <option key={category} value={category}>
-                    {category && category.charAt(0).toUpperCase() + category.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <div className="relative">
+            <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${
+              isDark ? 'text-gray-400' : 'text-gray-500'
+            } h-4 w-4`} />
+            <input
+              type="text"
+              placeholder="Search businesses..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={`block w-full pl-10 pr-3 py-2 ${
+                isDark 
+                  ? 'bg-dark-800/50 border-dark-600 text-white placeholder-gray-500' 
+                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
+              } rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200`}
+            />
           </div>
         </div>
 
         {/* Show data table only if there are addresses */}
         {addresses && addresses.length > 0 ? (
           <>
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
+            <div className="w-full">
+              <table className="w-full table-fixed">
                 <thead className={`${
                   isDark ? 'bg-dark-800/50' : 'bg-gray-50'
                 }`}>
                   <tr>
-                    <th className={`px-3 sm:px-6 py-3 text-left text-xs font-medium ${
+                    <th className={`px-2 sm:px-4 py-3 text-left text-xs font-medium ${
                       isDark ? 'text-gray-300' : 'text-gray-500'
-                    } uppercase tracking-wider`}>
+                    } uppercase tracking-wider w-32 sm:w-40`}>
                       Business
                     </th>
-                    <th className={`px-3 sm:px-6 py-3 text-left text-xs font-medium ${
+                    <th className={`px-2 sm:px-4 py-3 text-left text-xs font-medium ${
                       isDark ? 'text-gray-300' : 'text-gray-500'
-                    } uppercase tracking-wider hidden lg:table-cell`}>
+                    } uppercase tracking-wider hidden lg:table-cell w-32 xl:w-40`}>
                       Address
                     </th>
-                    <th className={`px-3 sm:px-6 py-3 text-left text-xs font-medium ${
+                    <th className={`px-2 sm:px-4 py-3 text-left text-xs font-medium ${
                       isDark ? 'text-gray-300' : 'text-gray-500'
-                    } uppercase tracking-wider hidden md:table-cell`}>
+                    } uppercase tracking-wider hidden md:table-cell w-28 lg:w-32`}>
                       Contact
                     </th>
-                    <th className={`px-3 sm:px-6 py-3 text-left text-xs font-medium ${
+                    <th className={`px-2 sm:px-4 py-3 text-left text-xs font-medium ${
                       isDark ? 'text-gray-300' : 'text-gray-500'
-                    } uppercase tracking-wider hidden sm:table-cell`}>
+                    } uppercase tracking-wider hidden sm:table-cell w-20 md:w-24`}>
                       Rating
                     </th>
-                    <th className={`px-3 sm:px-6 py-3 text-left text-xs font-medium ${
+                    <th className={`px-2 sm:px-4 py-3 text-left text-xs font-medium ${
                       isDark ? 'text-gray-300' : 'text-gray-500'
-                    } uppercase tracking-wider hidden xl:table-cell`}>
-                      Category
+                    } uppercase tracking-wider hidden xl:table-cell w-36 relative`}>
+                      <div className="flex items-center justify-between">
+                        <span>Category</span>
+                        <div className="relative filter-dropdown">
+                          <button
+                            onClick={() => {
+                              setCategoryDropdownOpen(!categoryDropdownOpen);
+                              setStatusDropdownOpen(false);
+                            }}
+                            className={`p-1 rounded transition-colors ${
+                              categoryFilter !== 'all' 
+                                ? 'text-purple-500' 
+                                : isDark 
+                                  ? 'text-gray-400 hover:text-gray-300' 
+                                  : 'text-gray-500 hover:text-gray-700'
+                            }`}
+                          >
+                            <Filter className="h-3 w-3" />
+                          </button>
+                          {categoryDropdownOpen && (
+                            <div className={`absolute right-0 top-full mt-1 w-48 ${
+                              isDark ? 'bg-dark-800 border-dark-600' : 'bg-white border-gray-200'
+                            } border rounded-lg shadow-lg z-50`}>
+                              <div className="py-1">
+                                <button
+                                  onClick={() => {
+                                    setCategoryFilter('all');
+                                    setCategoryDropdownOpen(false);
+                                  }}
+                                  className={`block w-full text-left px-3 py-2 text-sm ${
+                                    categoryFilter === 'all'
+                                      ? isDark
+                                        ? 'bg-purple-600 text-white'
+                                        : 'bg-purple-100 text-purple-900'
+                                      : isDark
+                                        ? 'text-gray-300 hover:bg-dark-700'
+                                        : 'text-gray-700 hover:bg-gray-50'
+                                  } transition-colors`}
+                                >
+                                  All Categories
+                                </button>
+                                {categories.map(category => (
+                                  <button
+                                    key={category}
+                                    onClick={() => {
+                                      setCategoryFilter(category);
+                                      setCategoryDropdownOpen(false);
+                                    }}
+                                    className={`block w-full text-left px-3 py-2 text-sm ${
+                                      categoryFilter === category
+                                        ? isDark
+                                          ? 'bg-purple-600 text-white'
+                                          : 'bg-purple-100 text-purple-900'
+                                        : isDark
+                                          ? 'text-gray-300 hover:bg-dark-700'
+                                          : 'text-gray-700 hover:bg-gray-50'
+                                    } transition-colors`}
+                                  >
+                                    {category && category.charAt(0).toUpperCase() + category.slice(1)}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </th>
-                    <th className={`px-3 sm:px-6 py-3 text-left text-xs font-medium ${
+                    <th className={`px-2 sm:px-4 py-3 text-left text-xs font-medium ${
                       isDark ? 'text-gray-300' : 'text-gray-500'
-                    } uppercase tracking-wider hidden lg:table-cell`}>
-                      Status
+                    } uppercase tracking-wider hidden lg:table-cell w-32 relative`}>
+                      <div className="flex items-center justify-between">
+                        <span>Status</span>
+                        <div className="relative filter-dropdown">
+                          <button
+                            onClick={() => {
+                              setStatusDropdownOpen(!statusDropdownOpen);
+                              setCategoryDropdownOpen(false);
+                            }}
+                            className={`p-1 rounded transition-colors ${
+                              statusFilter !== 'all' 
+                                ? 'text-purple-500' 
+                                : isDark 
+                                  ? 'text-gray-400 hover:text-gray-300' 
+                                  : 'text-gray-500 hover:text-gray-700'
+                            }`}
+                          >
+                            <Filter className="h-3 w-3" />
+                          </button>
+                          {statusDropdownOpen && (
+                            <div className={`absolute right-0 top-full mt-1 w-48 ${
+                              isDark ? 'bg-dark-800 border-dark-600' : 'bg-white border-gray-200'
+                            } border rounded-lg shadow-lg z-50`}>
+                              <div className="py-1">
+                                <button
+                                  onClick={() => {
+                                    setStatusFilter('all');
+                                    setStatusDropdownOpen(false);
+                                  }}
+                                  className={`block w-full text-left px-3 py-2 text-sm ${
+                                    statusFilter === 'all'
+                                      ? isDark
+                                        ? 'bg-purple-600 text-white'
+                                        : 'bg-purple-100 text-purple-900'
+                                      : isDark
+                                        ? 'text-gray-300 hover:bg-dark-700'
+                                        : 'text-gray-700 hover:bg-gray-50'
+                                  } transition-colors`}
+                                >
+                                  All Status
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setStatusFilter('operational');
+                                    setStatusDropdownOpen(false);
+                                  }}
+                                  className={`block w-full text-left px-3 py-2 text-sm ${
+                                    statusFilter === 'operational'
+                                      ? isDark
+                                        ? 'bg-purple-600 text-white'
+                                        : 'bg-purple-100 text-purple-900'
+                                      : isDark
+                                        ? 'text-gray-300 hover:bg-dark-700'
+                                        : 'text-gray-700 hover:bg-gray-50'
+                                  } transition-colors`}
+                                >
+                                  Operational
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setStatusFilter('closed_temporarily');
+                                    setStatusDropdownOpen(false);
+                                  }}
+                                  className={`block w-full text-left px-3 py-2 text-sm ${
+                                    statusFilter === 'closed_temporarily'
+                                      ? isDark
+                                        ? 'bg-purple-600 text-white'
+                                        : 'bg-purple-100 text-purple-900'
+                                      : isDark
+                                        ? 'text-gray-300 hover:bg-dark-700'
+                                        : 'text-gray-700 hover:bg-gray-50'
+                                  } transition-colors`}
+                                >
+                                  Closed Temporarily
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setStatusFilter('closed_permanently');
+                                    setStatusDropdownOpen(false);
+                                  }}
+                                  className={`block w-full text-left px-3 py-2 text-sm ${
+                                    statusFilter === 'closed_permanently'
+                                      ? isDark
+                                        ? 'bg-purple-600 text-white'
+                                        : 'bg-purple-100 text-purple-900'
+                                      : isDark
+                                        ? 'text-gray-300 hover:bg-dark-700'
+                                        : 'text-gray-700 hover:bg-gray-50'
+                                  } transition-colors`}
+                                >
+                                  Closed Permanently
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </th>
-                    <th className={`px-3 sm:px-6 py-3 text-left text-xs font-medium ${
+                    <th className={`px-2 sm:px-4 py-3 text-left text-xs font-medium ${
                       isDark ? 'text-gray-300' : 'text-gray-500'
-                    } uppercase tracking-wider hidden xl:table-cell`}>
+                    } uppercase tracking-wider hidden xl:table-cell w-24`}>
                       Added
                     </th>
-                    <th className={`px-3 sm:px-6 py-3 text-left text-xs font-medium ${
+                    <th className={`px-2 sm:px-3 py-3 text-left text-xs font-medium ${
                       isDark ? 'text-gray-300' : 'text-gray-500'
-                    } uppercase tracking-wider`}>
+                    } uppercase tracking-wider w-20 sm:w-24`}>
                       Actions
                     </th>
                   </tr>
@@ -682,13 +831,13 @@ export const Addresses: React.FC = () => {
                       } transition-colors ${
                         expandedRows.has(address.id) ? (isDark ? 'bg-dark-800/20' : 'bg-gray-50/50') : ''
                       }`}>
-                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap">
-                          <div className={`text-sm font-medium ${
+                        <td className="px-2 sm:px-4 py-4 w-32 sm:w-40">
+                          <div className={`text-sm font-medium truncate ${
                             isDark ? 'text-white' : 'text-gray-900'
-                          }`}>
+                          }`} title={address.name}>
                             {address.name}
                           </div>
-                          <div className={`text-sm ${
+                          <div className={`text-xs ${
                             isDark ? 'text-gray-400' : 'text-gray-600'
                           }`}>
                             {address.reviews} reviews
@@ -711,66 +860,70 @@ export const Addresses: React.FC = () => {
                             </div>
                           </div>
                         </td>
-                        <td className="px-3 sm:px-6 py-4 hidden lg:table-cell">
-                          <div className={`text-sm ${
+                        <td className="px-2 sm:px-4 py-4 hidden lg:table-cell w-32 xl:w-40">
+                          <div className={`text-sm truncate ${
                             isDark ? 'text-white' : 'text-gray-900'
-                          }`}>
-                            <MapPin className="h-4 w-4 inline mr-1" />
+                          }`} title={address.street}>
+                            <MapPin className="h-3 w-3 inline mr-1" />
                             {address.street}
                           </div>
-                          <div className={`text-sm ${
+                          <div className={`text-xs truncate ${
                             isDark ? 'text-gray-400' : 'text-gray-600'
-                          }`}>
-                            {address.city}, {address.state} {address.postal_code}
+                          }`} title={`${address.city}, ${address.state} ${address.postal_code}`}>
+                            {address.city}, {address.state}
                           </div>
                         </td>
-                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap hidden md:table-cell">
-                          <div className={`text-sm ${
+                        <td className="px-2 sm:px-4 py-4 hidden md:table-cell w-28 lg:w-32">
+                          <div className={`text-sm truncate ${
                             isDark ? 'text-white' : 'text-gray-900'
-                          }`}>
-                            <Phone className="h-4 w-4 inline mr-1" />
+                          }`} title={address.phone}>
+                            <Phone className="h-3 w-3 inline mr-1" />
                             {address.phone || 'N/A'}
                           </div>
                           {address.site && (
-                            <div className={`text-sm ${
+                            <div className={`text-xs ${
                               isDark ? 'text-gray-400' : 'text-gray-600'
                             }`}>
-                              <Globe className="h-4 w-4 inline mr-1" />
-                              <a href={address.site} target="_blank" rel="noopener noreferrer" className="hover:text-purple-400">
+                              <Globe className="h-3 w-3 inline mr-1" />
+                              <a href={address.site} target="_blank" rel="noopener noreferrer" className="hover:text-purple-400 truncate">
                                 Website
                               </a>
                             </div>
                           )}
                         </td>
-                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap hidden sm:table-cell">
+                        <td className="px-2 sm:px-4 py-4 hidden sm:table-cell w-20 md:w-24">
                           <div className="flex items-center space-x-1">
                             {getRatingStars(address.rating)}
-                            <span className={`text-sm ${
+                            <span className={`text-xs ${
                               isDark ? 'text-gray-400' : 'text-gray-600'
                             } ml-1`}>
                               {address.rating}
                             </span>
                           </div>
                         </td>
-                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap hidden xl:table-cell">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getCategoryColor(address.category)}`}>
-                            {address.category}
-                          </span>
+                        <td className="px-2 sm:px-4 py-4 hidden xl:table-cell w-36">
+                          <div className="max-w-full">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getCategoryColor(address.category)} max-w-full`} title={address.category}>
+                              <span className="truncate">{address.category}</span>
+                            </span>
+                          </div>
                         </td>
-                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap hidden lg:table-cell">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(address.business_status)}`}>
-                            {address.business_status ? address.business_status.replace('_', ' ') : 'Unknown'}
-                          </span>
+                        <td className="px-2 sm:px-4 py-4 hidden lg:table-cell w-32">
+                          <div className="max-w-full">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(address.business_status)} max-w-full`} title={address.business_status}>
+                              <span className="truncate">{address.business_status ? address.business_status.replace('_', ' ') : 'Unknown'}</span>
+                            </span>
+                          </div>
                         </td>
-                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap hidden xl:table-cell">
-                          <div className={`text-sm ${
+                        <td className="px-2 sm:px-4 py-4 hidden xl:table-cell w-24">
+                          <div className={`text-xs ${
                             isDark ? 'text-gray-400' : 'text-gray-600'
-                          }`}>
+                          }`} title={formatDistanceToNow(new Date(address.created_at), { addSuffix: true })}>
                             {formatDistanceToNow(new Date(address.created_at), { addSuffix: true })}
                           </div>
                         </td>
-                        <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <div className="flex items-center justify-end space-x-2">
+                        <td className="px-2 sm:px-3 py-4 whitespace-nowrap text-right text-sm font-medium w-20 sm:w-24">
+                          <div className="flex items-center justify-end space-x-1">
                             <button
                               onClick={() => toggleRowExpansion(address.id)}
                               className={`${
