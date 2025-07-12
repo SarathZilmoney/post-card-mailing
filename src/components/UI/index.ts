@@ -1,1 +1,2 @@
-export { SearchableDropdown } from './SearchableDropdown'; 
+export { SearchableDropdown } from './SearchableDropdown';
+export { ImageEditor } from './ImageEditor'; 

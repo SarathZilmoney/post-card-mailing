@@ -454,6 +454,36 @@ class CampaignService {
       throw error;
     }
   }
+
+  async getVerificationCode(): Promise<{success: boolean, code: string, message?: string}> {
+    try {
+      const response = await httpService.get('/verification-code') as {success: boolean, data?: {code: string}, message?: string};
+      
+      if (response.success && response.data?.code) {
+        return {
+          success: true,
+          code: response.data.code,
+          message: response.message
+        };
+      } else {
+        // Fallback to dummy code if API returns success but no code
+        console.log('API returned success but no code, using dummy code');
+        return {
+          success: true,
+          code: 'DUMMY123',
+          message: 'Using dummy verification code'
+        };
+      }
+    } catch (error) {
+      console.log('Verification code API call failed:', error);
+      // Return dummy code on error as requested
+      return {
+        success: true,
+        code: 'DUMMY123',
+        message: 'Using dummy verification code due to API error'
+      };
+    }
+  }
 }
 
 export const campaignService = new CampaignService();

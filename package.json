@@ -17,17 +17,19 @@
     "preview:production": "vite preview --mode production"
   },
   "dependencies": {
+    "@types/fabric": "^5.3.0",
+    "axios": "^1.6.0",
+    "clsx": "^2.0.0",
+    "date-fns": "^2.30.0",
+    "fabric": "^5.3.0",
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.8.1",
-    "axios": "^1.6.0",
-    "recharts": "^2.8.0",
-    "react-hook-form": "^7.47.0",
     "react-dropzone": "^14.2.3",
-    "date-fns": "^2.30.0",
-    "clsx": "^2.0.0",
-    "react-hot-toast": "^2.4.1"
+    "react-hook-form": "^7.47.0",
+    "react-hot-toast": "^2.4.1",
+    "react-router-dom": "^6.8.1",
+    "recharts": "^2.8.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",

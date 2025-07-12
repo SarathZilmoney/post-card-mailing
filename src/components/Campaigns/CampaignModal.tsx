@@ -1,13 +1,15 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useForm } from 'react-hook-form';
-import { Calendar, FileText, Upload, X, CheckCircle, Loader2, Users, Tag, ExternalLink } from 'lucide-react';
+import { Calendar, FileText, Upload, X, CheckCircle, Loader2, Users, Tag, ExternalLink, Gift } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCampaigns } from '../../hooks/useCampaigns';
 import { useTheme } from '../../context/ThemeContext';
 import { useAlert } from '../../context/AlertContext';
 import { categoryService } from '../../services/categoryService';
+import { campaignService } from '../../services/campaignService';
 import { AddressCategory, Campaign } from '../../types';
+import { ImageEditor } from '../UI';
 import toast from 'react-hot-toast';
 
 interface CampaignModalProps {
@@ -41,12 +43,22 @@ interface ImageValidationResult {
 export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, editCampaign, onCampaignCreated }) => {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [originalImagePreview, setOriginalImagePreview] = useState<string | null>(null);
   const [isProcessingImage, setIsProcessingImage] = useState(false);
   const [imageValidation, setImageValidation] = useState<ImageValidationResult | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [categories, setCategories] = useState<AddressCategory[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
+  
+  // Coupon code functionality state
+  const [addCouponCode, setAddCouponCode] = useState(false);
+  const [couponCode, setCouponCode] = useState<string>('');
+  const [isLoadingCouponCode, setIsLoadingCouponCode] = useState(false);
+  const [showImageEditor, setShowImageEditor] = useState(false);
+  const [finalImage, setFinalImage] = useState<File | null>(null);
+  const [originalImage, setOriginalImage] = useState<File | null>(null);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { createCampaign, editCampaign: editCampaignApi } = useCampaigns();
   const navigate = useNavigate();
@@ -61,9 +73,18 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
     // Clear file upload state
     setSelectedImage(null);
     setImagePreview(null);
+    setOriginalImagePreview(null);
+    setOriginalImage(null);
     setImageValidation(null);
     setIsProcessingImage(false);
     setDragActive(false);
+    
+    // Clear coupon code state
+    setAddCouponCode(false);
+    setCouponCode('');
+    setIsLoadingCouponCode(false);
+    setShowImageEditor(false);
+    setFinalImage(null);
     
     // Clear file input
     if (fileInputRef.current) {
@@ -266,12 +287,20 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
       }
       const reader = new FileReader();
       reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
+        const previewUrl = e.target?.result as string;
+        setImagePreview(previewUrl);
+        setOriginalImagePreview(previewUrl); // Store original preview
         setSelectedImage(file);
+        setOriginalImage(file); // Store original file
         setValue('postcardImage', file);
         setImageValidation(validation);
         setIsProcessingImage(false);
         toast.success('File uploaded!');
+        
+        // If coupon code is enabled, fetch the verification code and show editor
+        if (addCouponCode) {
+          handleCouponCodeFlow(file);
+        }
       };
       reader.onerror = () => {
         alert.error('Failed to process file.');
@@ -282,7 +311,64 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
       alert.error('An error occurred while processing the file');
       setIsProcessingImage(false);
     }
-  }, [validateFile, setValue]);
+  }, [validateFile, setValue, addCouponCode]);
+
+  const handleCouponCodeFlow = useCallback(async (file: File) => {
+    setIsLoadingCouponCode(true);
+    
+    try {
+      const response = await campaignService.getVerificationCode();
+      setCouponCode(response.code);
+      setShowImageEditor(true);
+      
+      if (response.message) {
+        toast.success(response.message);
+      }
+    } catch (error) {
+      console.error('Failed to fetch coupon code:', error);
+      toast.error('Failed to fetch coupon code, using default');
+      setCouponCode('DUMMY123');
+      setShowImageEditor(true);
+    } finally {
+      setIsLoadingCouponCode(false);
+    }
+  }, []);
+
+  const handleImageEditorConfirm = useCallback((processedImageBlob: Blob) => {
+    // Convert blob to file
+    const processedFile = new File([processedImageBlob], 'postcard-with-coupon.png', {
+      type: 'image/png'
+    });
+    
+    // Create new preview URL for the processed image
+    const processedPreviewUrl = URL.createObjectURL(processedImageBlob);
+    
+    setFinalImage(processedFile);
+    setSelectedImage(processedFile);
+    setImagePreview(processedPreviewUrl);
+    setValue('postcardImage', processedFile);
+    setShowImageEditor(false);
+    toast.success('Coupon code added to postcard!');
+  }, [setValue]);
+
+  const handleImageEditorCancel = useCallback(() => {
+    setShowImageEditor(false);
+    setAddCouponCode(false);
+    toast.success('Coupon code cancelled');
+  }, []);
+
+  const handleRemoveCoupon = useCallback(() => {
+    // Revert to original image
+    if (originalImage && originalImagePreview) {
+      setSelectedImage(originalImage);
+      setImagePreview(originalImagePreview);
+      setValue('postcardImage', originalImage);
+      setFinalImage(null);
+      setCouponCode('');
+      setAddCouponCode(false);
+      toast.success('Coupon code removed from postcard');
+    }
+  }, [originalImage, originalImagePreview, setValue]);
 
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -299,9 +385,22 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
     else alert.error('Please upload only one file.');
   };
   const removeImage = () => {
+    // Clean up URL objects to prevent memory leaks
+    if (imagePreview && imagePreview.startsWith('blob:')) {
+      URL.revokeObjectURL(imagePreview);
+    }
+    if (originalImagePreview && originalImagePreview.startsWith('blob:')) {
+      URL.revokeObjectURL(originalImagePreview);
+    }
+    
     setSelectedImage(null);
     setImagePreview(null);
+    setOriginalImagePreview(null);
+    setOriginalImage(null);
     setImageValidation(null);
+    setFinalImage(null);
+    setAddCouponCode(false);
+    setCouponCode('');
     // Note: postcardImage is now required, so we don't unset it from form
     toast.success('File removed');
   };
@@ -360,9 +459,10 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
         formData.append('campaign_id', editCampaign.id);
       }
       
-      // Add file if provided
-      if (selectedImage) {
-        formData.append('postcardImage', selectedImage);
+      // Use finalImage if it exists (when coupon code was added), otherwise use selectedImage
+      const imageToSubmit = finalImage || selectedImage;
+      if (imageToSubmit) {
+        formData.append('postcardImage', imageToSubmit);
       }
       
       let response;
@@ -724,6 +824,12 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
                         } object-contain shadow-lg`} 
                       />
                     )}
+                    {finalImage && (
+                      <div className="absolute -top-2 -left-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full shadow-sm flex items-center">
+                        <Gift className="h-3 w-3 mr-1" />
+                        Coupon Added
+                      </div>
+                    )}
                     <button 
                       type="button" 
                       onClick={removeImage} 
@@ -775,6 +881,58 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
               )}
             </div>
             
+            {/* Coupon Code Option */}
+            {selectedImage && (
+              <div className={`${
+                isDark 
+                  ? 'bg-blue-500/10 border-blue-400/20' 
+                  : 'bg-blue-50 border-blue-200'
+              } border rounded-lg p-4 mb-4`}>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="addCouponCode"
+                    checked={addCouponCode}
+                                         onChange={(e) => {
+                       if (e.target.checked && selectedImage) {
+                         setAddCouponCode(true);
+                         handleCouponCodeFlow(selectedImage);
+                       } else if (!e.target.checked) {
+                         handleRemoveCoupon();
+                       }
+                     }}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="addCouponCode" className="ml-3 flex items-center">
+                    <Gift className={`h-5 w-5 ${
+                      isDark ? 'text-blue-400' : 'text-blue-600'
+                    } mr-2`} />
+                    <span className={`text-sm font-medium ${
+                      isDark ? 'text-blue-300' : 'text-blue-900'
+                    }`}>
+                      Add coupon code to postcard
+                    </span>
+                  </label>
+                </div>
+                {addCouponCode && (
+                  <div className={`mt-3 text-sm ${
+                    isDark ? 'text-blue-300' : 'text-blue-700'
+                  }`}>
+                    <p>✓ Coupon code will be added to your postcard image</p>
+                    {couponCode && (
+                      <p className="mt-1 font-medium">Code: {couponCode}</p>
+                    )}
+                    {isLoadingCouponCode && (
+                      <p className="mt-1 flex items-center">
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Fetching coupon code...
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+            
             {/* Preview - Full Width */}
             {(watchedName || watchedDescription) && (
               <div className={`${
@@ -824,5 +982,21 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
   );
 
   // Use portal to render modal at document level
-  return createPortal(modalContent, document.body);
+  return createPortal(
+    <>
+      {modalContent}
+      
+      {/* Image Editor Modal */}
+      {showImageEditor && selectedImage && couponCode && (
+        <ImageEditor
+          imageFile={selectedImage}
+          couponCode={couponCode}
+          onConfirm={handleImageEditorConfirm}
+          onCancel={handleImageEditorCancel}
+          isDark={isDark}
+        />
+      )}
+    </>,
+    document.body
+  );
 }; 
