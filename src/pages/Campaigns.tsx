@@ -495,7 +495,7 @@ export const Campaigns: React.FC = () => {
                   isDark
                     ? 'bg-gray-700/50 text-gray-400 border border-gray-600'
                     : 'bg-gray-100 text-gray-500 border border-gray-200'
-                }`}>
+                }`}> 
                   <CheckCircle className="h-4 w-4 mr-2" />
                   <span className="text-sm font-medium">
                     <span className="hidden sm:inline">
