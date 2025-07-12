@@ -163,7 +163,7 @@ class CampaignService {
         payload.append('campaign_name', campaignName.trim());
         payload.append('description', description.trim());
         payload.append('start_date', startDate);
-        payload.append('category', category || 'Hospital'); // Use provided category or default
+        payload.append('category_id', category || ''); // Send category ID instead of name
         
         // Add zip code if provided
         const zipCode = campaignData.get('zipCode') as string;
@@ -249,7 +249,7 @@ class CampaignService {
       payload.append('campaign_name', campaignName.trim());
       payload.append('description', description.trim());
       payload.append('start_date', startDate);
-      payload.append('category', category || 'Hospital'); // Use provided category or default to Hospital
+      payload.append('category_id', category || ''); // Send category ID instead of name
       
       // Add zip code if provided
       const zipCode = campaignData.get('zipCode') as string;

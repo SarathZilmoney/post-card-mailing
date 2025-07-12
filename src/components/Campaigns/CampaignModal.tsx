@@ -21,7 +21,7 @@ interface CreateCampaignFormData {
   name: string;
   description: string;
   startDate: string;
-  category: string;
+  category: string; // This will now store category ID as string
   targetAddressCount: number;
   postcardImage: File;
   zipCode: string;
@@ -110,7 +110,7 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
       name: editCampaign?.name || '',
       description: editCampaign?.description || '',
       startDate: editCampaign?.scheduledDate || new Date().toISOString().split('T')[0],
-      category: editCampaign?.category || '',
+      category: '', // Will be set after categories are loaded
       targetAddressCount: editCampaign?.targetAddressCount || 100,
       zipCode: editCampaign?.zipCode || ''
     }
@@ -132,11 +132,16 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
   // Reset form when switching between edit and create modes
   useEffect(() => {
     if (open) {
+      // Find category ID from category name for edit mode
+      const categoryId = editCampaign?.category && categories.length > 0
+        ? categories.find(cat => cat.name === editCampaign.category)?.id?.toString() || ''
+        : '';
+      
       reset({
         name: editCampaign?.name || '',
         description: editCampaign?.description || '',
         startDate: editCampaign?.scheduledDate || new Date().toISOString().split('T')[0],
-        category: editCampaign?.category || '',
+        category: categoryId,
         targetAddressCount: editCampaign?.targetAddressCount || 100,
         zipCode: editCampaign?.zipCode || ''
       });
@@ -148,7 +153,7 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
         setImageValidation(null);
       }
     }
-  }, [open, editCampaign, reset]);
+  }, [open, editCampaign, reset, categories]);
 
   const loadCategories = async () => {
     setLoadingCategories(true);
@@ -163,7 +168,7 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
     }
   };
 
-  const selectedCategory = categories.find(cat => cat.name === watchedCategory);
+  const selectedCategory = categories.find(cat => cat.id.toString() === watchedCategory);
   const maxAddressCount = selectedCategory ? selectedCategory.address_count : 1000;
 
   // Handle category selection change
@@ -532,7 +537,7 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
                     </option>
                     {categories.length > 0 ? (
                       categories.map((category) => (
-                        <option key={category.name} value={category.name}>
+                        <option key={category.id} value={category.id.toString()}>
                           {category.name} ({category.address_count} available)
                         </option>
                       ))
