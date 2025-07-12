@@ -19,7 +19,13 @@ class UrlService {
   setTempBackendUrl(url: string): void {
     if (url.trim()) {
       // Ensure URL doesn't end with slash
-      const cleanUrl = url.trim().replace(/\/$/, '');
+      let cleanUrl = url.trim().replace(/\/$/, '');
+      
+      // Append /api if it's not already there
+      if (!cleanUrl.endsWith('/api')) {
+        cleanUrl += '/api';
+      }
+      
       sessionStorage.setItem(UrlService.STORAGE_KEY, cleanUrl);
     }
   }
