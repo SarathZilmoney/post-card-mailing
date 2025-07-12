@@ -70,9 +70,9 @@ export const useAddresses = (filters?: Record<string, unknown>) => {
     }
   };
 
-  const deleteAddress = async (id: number) => {
+  const deleteAddress = async (encryptedId: string) => {
     try {
-      await addressService.deleteAddress(id.toString());
+      await addressService.deleteAddress(encryptedId);
       // Refresh the current page after deletion
       await fetchAddresses(currentPage);
     } catch (err) {

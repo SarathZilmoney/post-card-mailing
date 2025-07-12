@@ -81,7 +81,11 @@ class AddressService {
 
   async deleteAddress(id: string): Promise<void> {
     try {
-      await httpService.delete(`/sua/postal-cards/delete-address/${id}`);
+      await httpService.delete('/sua/postal-cards/delete-addresses', {
+        body: JSON.stringify({
+          address_ids: [id]
+        })
+      });
     } catch (error) {
       console.error('Delete address API call failed:', error);
       
@@ -90,6 +94,24 @@ class AddressService {
       }
       
       throw new Error('Failed to delete address. Please try again.');
+    }
+  }
+
+  async deleteAddresses(ids: string[]): Promise<void> {
+    try {
+      await httpService.delete('/sua/postal-cards/delete-addresses', {
+        body: JSON.stringify({
+          address_ids: ids
+        })
+      });
+    } catch (error) {
+      console.error('Delete addresses API call failed:', error);
+      
+      if (error instanceof Error && error.message.includes('Session expired')) {
+        throw error;
+      }
+      
+      throw new Error('Failed to delete addresses. Please try again.');
     }
   }
 

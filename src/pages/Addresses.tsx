@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 import { alertService } from '../services/alertService';
 
 export const Addresses: React.FC = () => {
-  const { addresses, total, currentPage, totalPages, loading, error, goToPage, goToNextPage, goToPreviousPage, deleteAddress, importAddresses } = useAddresses();
+  const { addresses, total, currentPage, totalPages, loading, error, goToPage, goToNextPage, goToPreviousPage, deleteAddress, importAddresses, refetch } = useAddresses();
   const { isDark } = useTheme();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
@@ -61,15 +61,45 @@ export const Addresses: React.FC = () => {
     navigate('/outscrapper');
   };
 
-  const handleDelete = async (id: number) => {
-    if (window.confirm('Are you sure you want to delete this address?')) {
-      try {
-        await deleteAddress(id);
-        toast.success('Address deleted successfully');
-      } catch (error) {
-        toast.error('Failed to delete address');
+  const handleDelete = async (encryptedId: string, businessName: string) => {
+    // Show confirmation alert
+    alertService.warning(
+      `Are you sure you want to delete "${businessName}"? This action cannot be undone.`,
+      {
+        title: 'Delete Address',
+        confirmText: 'Delete Address',
+        cancelText: 'Cancel',
+        onConfirm: async () => {
+          try {
+            await deleteAddress(encryptedId);
+            
+            // Show success alert
+            alertService.success('Address deleted successfully', {
+              title: 'Address Deleted',
+              duration: 3000
+            });
+            
+            // Show toast notification as well
+            toast.success('Address deleted successfully');
+            
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Failed to delete address';
+            
+            // Show error alert
+            alertService.error(errorMessage, {
+              title: 'Delete Failed',
+              duration: 3000
+            });
+            
+            // Show toast notification as well
+            toast.error(errorMessage);
+          }
+        },
+        onCancel: () => {
+          // Do nothing on cancel
+        }
       }
-    }
+    );
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -124,6 +154,9 @@ export const Addresses: React.FC = () => {
         // Handle unexpected success response format
         alertService.success('Excel file uploaded successfully');
       }
+      
+      // Refresh the address list to show new addresses
+      await refetch(currentPage);
     } catch (error) {
       // Hide loading alert
       if (loadingId) {
@@ -966,7 +999,7 @@ export const Addresses: React.FC = () => {
                               )}
                             </button>
                             <button
-                              onClick={() => handleDelete(address.id)}
+                              onClick={() => handleDelete(address.encrypted_id, address.name)}
                               className={`${
                                 isDark 
                                   ? 'text-gray-400 hover:text-red-400 hover:bg-dark-800/50' 
