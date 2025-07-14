@@ -353,7 +353,6 @@ export const CreateCampaignForm: React.FC = () => {
       toast.success('Campaign created successfully!');
       navigate('/campaigns');
     } catch (error: any) {
-      console.error('Campaign creation error:', error);
       const errorMessage = error?.message || 'Failed to create campaign. Please try again.';
       toast.error(errorMessage);
     } finally {

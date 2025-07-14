@@ -34,7 +34,7 @@ export const RunTrackingDisplay: React.FC<RunTrackingDisplayProps> = ({
       const history = await onGetRunHistory(campaign.id);
       setRunHistory(history);
     } catch (error) {
-      console.error('Failed to load run history:', error);
+      // Error loading run history - silently fail
     } finally {
       setLoading(false);
     }

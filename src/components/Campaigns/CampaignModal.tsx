@@ -161,7 +161,6 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
       const categoriesData = await categoryService.getAddressCategories();
       setCategories(categoriesData);
     } catch (error) {
-      console.error('Failed to load categories:', error);
       alert.error('Failed to load address categories');
     } finally {
       setLoadingCategories(false);
@@ -411,7 +410,6 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
         onCampaignCreated();
       }
     } catch (error: any) {
-      console.error(`Campaign ${isEditMode ? 'update' : 'creation'} error:`, error);
       alert.error(error?.message || `Failed to ${isEditMode ? 'update' : 'create'} campaign.`, {
         title: 'Error',
         duration: 5000

@@ -120,7 +120,7 @@ const AlertModal: React.FC<AlertModalProps> = ({ alert }) => {
         await alert.onConfirm();
         hideAlert(alert.id);
       } catch (error) {
-        console.error('Error in alert confirm handler:', error);
+        // Error in alert confirm handler - silently fail
       } finally {
         setIsProcessing(false);
       }
@@ -136,7 +136,7 @@ const AlertModal: React.FC<AlertModalProps> = ({ alert }) => {
         await alert.onCancel();
         hideAlert(alert.id);
       } catch (error) {
-        console.error('Error in alert cancel handler:', error);
+        // Error in alert cancel handler - silently fail
       } finally {
         setIsProcessing(false);
       }

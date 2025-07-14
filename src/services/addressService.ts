@@ -61,8 +61,6 @@ class AddressService {
         throw new Error('Failed to fetch addresses from server');
       }
     } catch (error) {
-      console.error('Get addresses API call failed:', error);
-      
       // Check if it's an authentication error
       if (error instanceof Error && error.message.includes('Session expired')) {
         // Re-throw authentication errors to trigger proper logout
@@ -79,8 +77,6 @@ class AddressService {
       const data = await httpService.post('/sua/postal-cards/create-address', addressData) as Address;
       return data;
     } catch (error) {
-      console.error('Create address API call failed:', error);
-      
       if (error instanceof Error && error.message.includes('Session expired')) {
         throw error;
       }
@@ -94,8 +90,6 @@ class AddressService {
       const data = await httpService.put(`/sua/postal-cards/update-address/${id}`, updates) as Address;
       return data;
     } catch (error) {
-      console.error('Update address API call failed:', error);
-      
       if (error instanceof Error && error.message.includes('Session expired')) {
         throw error;
       }
@@ -112,8 +106,6 @@ class AddressService {
         })
       });
     } catch (error) {
-      console.error('Delete address API call failed:', error);
-      
       if (error instanceof Error && error.message.includes('Session expired')) {
         throw error;
       }
@@ -130,8 +122,6 @@ class AddressService {
         })
       });
     } catch (error) {
-      console.error('Delete addresses API call failed:', error);
-      
       if (error instanceof Error && error.message.includes('Session expired')) {
         throw error;
       }
@@ -151,8 +141,6 @@ class AddressService {
       const data = await httpService.post('/sua/postal-cards/import-addresses', formData) as ImportAddressesResponse;
       return data;
     } catch (error) {
-      console.error('Import addresses API call failed:', error);
-      
       if (error instanceof Error && error.message.includes('Session expired')) {
         throw error;
       }
@@ -165,8 +153,6 @@ class AddressService {
     try {
       await httpService.post('/sua/postal-cards/validate-addresses', { addressIds });
     } catch (error) {
-      console.error('Validate addresses API call failed:', error);
-      
       if (error instanceof Error && error.message.includes('Session expired')) {
         throw error;
       }
@@ -180,8 +166,6 @@ class AddressService {
       const data = await httpService.post('/sua/postal-cards/check-duplicates', address) as Address[];
       return data || [];
     } catch (error) {
-      console.error('Check duplicates API call failed:', error);
-      
       if (error instanceof Error && error.message.includes('Session expired')) {
         throw error;
       }

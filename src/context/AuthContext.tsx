@@ -51,7 +51,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const user: User = JSON.parse(userData);
             dispatch({ type: 'LOGIN_SUCCESS', payload: user });
           } catch (parseError) {
-            console.error('Failed to parse stored user data:', parseError);
             // Clear invalid data
             localStorage.removeItem('token');
             localStorage.removeItem('user');
@@ -61,7 +60,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           dispatch({ type: 'SET_LOADING', payload: false });
         }
       } catch (error) {
-        console.error('Auth initialization error:', error);
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         dispatch({ type: 'SET_LOADING', payload: false });
@@ -104,7 +102,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await authService.logout();
     } catch (error) {
-      console.error('Logout error:', error);
+      // Logout error - silently fail
     }
     
     // Clear both token and user data

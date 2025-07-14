@@ -56,9 +56,6 @@ export const AlertProvider: React.FC<AlertProviderProps> = ({ children }) => {
       finalOnCloseCallback = targetAlert?.onClose;
     }
     
-    // Debug logging (can be removed in production)
-    // console.log('hideAlert called for:', id, 'has onClose:', !!finalOnCloseCallback);
-    
     setAlerts(prev => 
       prev.map(alert => 
         alert.id === id ? { ...alert, isVisible: false } : alert
@@ -72,10 +69,9 @@ export const AlertProvider: React.FC<AlertProviderProps> = ({ children }) => {
       // Call onClose callback if it exists
       if (finalOnCloseCallback) {
         try {
-          // console.log('Calling onClose callback for alert:', id);
           finalOnCloseCallback();
         } catch (error) {
-          console.error('Error in alert onClose callback:', error);
+          // Error in alert onClose callback - silently fail
         }
       }
     }, 300);

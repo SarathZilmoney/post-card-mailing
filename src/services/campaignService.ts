@@ -18,11 +18,9 @@ class CampaignService {
           return dateB.getTime() - dateA.getTime();
         });
       } else {
-        console.log('Invalid response format:', response);
         return [];
       }
     } catch (error) {
-      console.log('Campaigns API call failed:', error);
       throw error;
     }
   }
@@ -215,12 +213,9 @@ class CampaignService {
         // We'll need to refetch campaigns to get the updated list
         return response;
       } else {
-        console.log('Campaign creation failed:', response);
         throw new Error(response.message || 'Failed to create campaign');
       }
     } catch (error) {
-      console.log('Create campaign API call failed:', error);
-      
       // Enhanced error handling for 422 responses
       if (error instanceof Error) {
         if (error.message.includes('422') || error.message.includes('Unprocessable')) {
@@ -305,12 +300,9 @@ class CampaignService {
       if (response.success) {
         return response;
       } else {
-        console.log('Campaign edit failed:', response);
         throw new Error(response.message || 'Failed to edit campaign');
       }
     } catch (error) {
-      console.log('Edit campaign API call failed:', error);
-      
       // Enhanced error handling for 422 responses
       if (error instanceof Error) {
         if (error.message.includes('422') || error.message.includes('Unprocessable')) {
@@ -330,7 +322,6 @@ class CampaignService {
       const data = await httpService.put(`/campaigns/${id}`, updates) as Record<string, unknown>;
       return this.mapBackendCampaignToFrontend(data);
     } catch (error) {
-      console.log('Update campaign API call failed:', error);
       throw error;
     }
   }
@@ -366,12 +357,9 @@ class CampaignService {
           campaign
         };
       } else {
-        console.log('Campaign run failed:', response);
         throw new Error(response.message || 'Failed to start campaign run');
       }
     } catch (error) {
-      console.log('Run campaign API call failed:', error);
-      
       // Enhanced error handling for different response codes
       if (error instanceof Error) {
         if (error.message.includes('422') || error.message.includes('Unprocessable')) {
@@ -409,11 +397,9 @@ class CampaignService {
           errorMessage: (run.error_message as string) || undefined
         }));
       } else {
-        console.log('Failed to fetch run history:', response);
         return [];
       }
     } catch (error) {
-      console.log('Get run history API call failed:', error);
       throw new Error('Failed to fetch campaign run history');
     }
   }
@@ -424,7 +410,6 @@ class CampaignService {
       const data = await httpService.post(`/campaigns/${id}/stop`) as Record<string, unknown>;
       return this.mapBackendCampaignToFrontend(data);
     } catch (error) {
-      console.log('Stop campaign API call failed:', error);
       throw error;
     }
   }
@@ -448,12 +433,9 @@ class CampaignService {
       if (response.success) {
         return response;
       } else {
-        console.log('Campaign deletion failed:', response);
         throw new Error(response.message || 'Failed to delete campaign');
       }
     } catch (error) {
-      console.log('Delete campaign API call failed:', error);
-      
       // Enhanced error handling
       if (error instanceof Error) {
         if (error.message.includes('422') || error.message.includes('Unprocessable')) {
@@ -480,7 +462,6 @@ class CampaignService {
       const data = await httpService.get(`/campaigns/${campaignId}/addresses`) as Address[];
       return data;
     } catch (error) {
-      console.log('Get campaign addresses API call failed:', error);
       throw error;
     }
   }
