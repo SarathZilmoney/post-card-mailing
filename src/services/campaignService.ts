@@ -18,21 +18,14 @@ class CampaignService {
           return dateB.getTime() - dateA.getTime();
         });
       } else {
-        console.log('Invalid response format:', response);
         return [];
       }
     } catch (error) {
-      console.log('Campaigns API call failed:', error);
       throw error;
     }
   }
 
   private mapBackendCampaignToFrontend(backendCampaign: Record<string, unknown>): Campaign {
-    // Debug logging in development
-    if (import.meta.env.DEV) {
-      console.log('Mapping backend campaign to frontend:', backendCampaign);
-    }
-
     // Handle address count - now comes from total_addresses field or default to 0
     const addressCount = (backendCampaign.total_addresses as number) || 0;
 
@@ -189,18 +182,6 @@ class CampaignService {
         
         payload.append('file', file);
         
-        // Log payload for debugging in development
-        if (import.meta.env.DEV) {
-          console.log('Create campaign payload being sent:', {
-            campaign_name: campaignName,
-            description: description,
-            start_date: startDate,
-            category_encrypted_id: category,
-            zipCode: zipCode,
-            hasFile: !!file
-          });
-        }
-        
       } else {
         // Handle object data (convert to FormData) - Note: This path doesn't support file uploads
         throw new Error('Postcard image is required. Please use the campaign creation form.');
@@ -215,12 +196,9 @@ class CampaignService {
         // We'll need to refetch campaigns to get the updated list
         return response;
       } else {
-        console.log('Campaign creation failed:', response);
         throw new Error(response.message || 'Failed to create campaign');
       }
     } catch (error) {
-      console.log('Create campaign API call failed:', error);
-      
       // Enhanced error handling for 422 responses
       if (error instanceof Error) {
         if (error.message.includes('422') || error.message.includes('Unprocessable')) {
@@ -283,21 +261,6 @@ class CampaignService {
         payload.append('file', file);
       }
       
-      // Log payload for debugging in development
-      if (import.meta.env.DEV) {
-        console.log('Edit campaign - received FormData:', {
-          campaign_id: campaignId,
-          encrypted_id: encryptedId,
-          campaign_name: campaignName,
-          description: description,
-          start_date: startDate,
-          category: category,
-          zipCode: zipCode,
-          hasFile: !!file
-        });
-        console.log('Edit campaign payload being sent with encryptedId:', encryptedId);
-      }
-      
       // Make API call to the update endpoint with encrypted_id in URL
       const response = await httpService.post(`/sua/postal-cards/update-campaign/${encryptedId}`, payload) as {success: boolean, message: string};
       
@@ -305,12 +268,9 @@ class CampaignService {
       if (response.success) {
         return response;
       } else {
-        console.log('Campaign edit failed:', response);
         throw new Error(response.message || 'Failed to edit campaign');
       }
     } catch (error) {
-      console.log('Edit campaign API call failed:', error);
-      
       // Enhanced error handling for 422 responses
       if (error instanceof Error) {
         if (error.message.includes('422') || error.message.includes('Unprocessable')) {
@@ -330,7 +290,6 @@ class CampaignService {
       const data = await httpService.put(`/campaigns/${id}`, updates) as Record<string, unknown>;
       return this.mapBackendCampaignToFrontend(data);
     } catch (error) {
-      console.log('Update campaign API call failed:', error);
       throw error;
     }
   }
@@ -347,11 +306,6 @@ class CampaignService {
         campaignId: encryptedId
       };
       
-      // Log payload for debugging in development
-      if (import.meta.env.DEV) {
-        console.log('Run campaign payload being sent:', payload);
-      }
-      
       // Make API call to the new endpoint
       const response = await httpService.post('/sua/postal-cards/sent-postal-card', payload) as {success: boolean, message: string, campaign?: Record<string, unknown>};
       
@@ -366,12 +320,9 @@ class CampaignService {
           campaign
         };
       } else {
-        console.log('Campaign run failed:', response);
         throw new Error(response.message || 'Failed to start campaign run');
       }
     } catch (error) {
-      console.log('Run campaign API call failed:', error);
-      
       // Enhanced error handling for different response codes
       if (error instanceof Error) {
         if (error.message.includes('422') || error.message.includes('Unprocessable')) {
@@ -409,11 +360,9 @@ class CampaignService {
           errorMessage: (run.error_message as string) || undefined
         }));
       } else {
-        console.log('Failed to fetch run history:', response);
         return [];
       }
     } catch (error) {
-      console.log('Get run history API call failed:', error);
       throw new Error('Failed to fetch campaign run history');
     }
   }
@@ -424,7 +373,6 @@ class CampaignService {
       const data = await httpService.post(`/campaigns/${id}/stop`) as Record<string, unknown>;
       return this.mapBackendCampaignToFrontend(data);
     } catch (error) {
-      console.log('Stop campaign API call failed:', error);
       throw error;
     }
   }
@@ -436,11 +384,6 @@ class CampaignService {
         throw new Error('Campaign encrypted ID is required');
       }
       
-      // Log request for debugging in development
-      if (import.meta.env.DEV) {
-        console.log('Delete campaign request being sent for encrypted ID:', encryptedId);
-      }
-      
       // Make API call to the delete endpoint with encrypted_id in URL
       const response = await httpService.delete(`/sua/postal-cards/campaign/${encryptedId}`) as {success: boolean, message: string};
       
@@ -448,12 +391,9 @@ class CampaignService {
       if (response.success) {
         return response;
       } else {
-        console.log('Campaign deletion failed:', response);
         throw new Error(response.message || 'Failed to delete campaign');
       }
     } catch (error) {
-      console.log('Delete campaign API call failed:', error);
-      
       // Enhanced error handling
       if (error instanceof Error) {
         if (error.message.includes('422') || error.message.includes('Unprocessable')) {
@@ -480,7 +420,6 @@ class CampaignService {
       const data = await httpService.get(`/campaigns/${campaignId}/addresses`) as Address[];
       return data;
     } catch (error) {
-      console.log('Get campaign addresses API call failed:', error);
       throw error;
     }
   }

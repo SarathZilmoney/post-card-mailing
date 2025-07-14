@@ -181,7 +181,6 @@ export const Campaigns: React.FC = () => {
     try {
       await refetch(true);
     } catch (error) {
-      console.error('Failed to refresh campaigns after creation:', error);
       alert.warning('Campaign was created successfully, but failed to refresh the list. Please refresh the page to see the new campaign.', {
         title: 'Refresh Failed',
         duration: 6000

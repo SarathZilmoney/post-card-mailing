@@ -81,7 +81,6 @@ class AuthService {
       }
     } catch (error) {
       // If API call fails, just continue with local logout
-      console.log('Logout API call failed, continuing with local logout:', error);
     }
     
     // Clear any stored data

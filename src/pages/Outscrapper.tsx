@@ -82,7 +82,6 @@ export const Outscrapper: React.FC = () => {
           duration: 5000
         }
       );
-      console.error('Outscrapper fetch error:', error);
     } finally {
       setFetchLoading(false);
     }

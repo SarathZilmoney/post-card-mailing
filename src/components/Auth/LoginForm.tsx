@@ -36,7 +36,6 @@ export const LoginForm: React.FC = () => {
       toast.success('Welcome back!');
       navigate(from, { replace: true });
     } catch (error: unknown) {
-      console.error('Login error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Invalid credentials. Please try again.';
       toast.error(errorMessage);
       setError('email', { message: errorMessage });

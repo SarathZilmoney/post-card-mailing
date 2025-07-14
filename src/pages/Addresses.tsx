@@ -552,7 +552,7 @@ export const Addresses: React.FC = () => {
         const categoriesData = await categoryService.getAddressCategories();
         setCategories(categoriesData);
       } catch (error) {
-        console.error('Failed to load categories:', error);
+        // Error loading categories - silently fail
       }
     };
     

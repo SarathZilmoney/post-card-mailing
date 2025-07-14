@@ -161,7 +161,6 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
       const categoriesData = await categoryService.getAddressCategories();
       setCategories(categoriesData);
     } catch (error) {
-      console.error('Failed to load categories:', error);
       alert.error('Failed to load address categories');
     } finally {
       setLoadingCategories(false);
@@ -349,10 +348,6 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
         return;
       }
       
-      // Log form data for debugging
-      console.log('Form data being submitted:', data);
-      console.log('Edit campaign object:', editCampaign);
-      
       const formData = new FormData();
       formData.append('name', data.name.trim());
       formData.append('description', data.description.trim());
@@ -368,24 +363,11 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
           formData.append('campaign_id', editCampaign.id);
         }
         formData.append('encrypted_id', editCampaign.encrypted_id);
-        
-        // Log what's being added for edit mode
-        console.log('Edit mode - adding to FormData:', {
-          campaign_id: editCampaign.id,
-          encrypted_id: editCampaign.encrypted_id,
-          hasId: !!editCampaign.id
-        });
       }
       
       // Add file if provided
       if (selectedImage) {
         formData.append('postcardImage', selectedImage);
-      }
-      
-      // Log final FormData contents for debugging
-      console.log('Final FormData entries:');
-      for (let [key, value] of formData.entries()) {
-        console.log(`${key}:`, value);
       }
       
       let response;
@@ -411,7 +393,6 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
         onCampaignCreated();
       }
     } catch (error: any) {
-      console.error(`Campaign ${isEditMode ? 'update' : 'creation'} error:`, error);
       alert.error(error?.message || `Failed to ${isEditMode ? 'update' : 'create'} campaign.`, {
         title: 'Error',
         duration: 5000

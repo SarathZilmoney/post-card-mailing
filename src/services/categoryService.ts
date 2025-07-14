@@ -14,7 +14,6 @@ class CategoryService {
         return [];
       }
     } catch (error) {
-      console.error('Failed to fetch address categories:', error);
       // Return empty array instead of mock data
       return [];
     }
@@ -35,7 +34,6 @@ class CategoryService {
         return { categories: [], totalCount: 0 };
       }
     } catch (error) {
-      console.error('Failed to fetch address categories:', error);
       return { categories: [], totalCount: 0 };
     }
   }

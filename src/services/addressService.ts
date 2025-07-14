@@ -14,11 +14,6 @@ class AddressService {
       const queryString = queryParams.toString();
       const endpoint = queryString ? `/sua/postal-cards/list-postal-addresses?${queryString}` : '/sua/postal-cards/list-postal-addresses';
       
-      // Debug logging
-      if (import.meta.env.DEV) {
-        console.log('API Request:', endpoint);
-      }
-      
       const response = await httpService.get(endpoint) as AddressResponse;
       
       if (response.success) {
@@ -37,20 +32,6 @@ class AddressService {
         const knownTotal = (page - 1) * perPage + returnedCount;
         const totalPages = hasNextPage ? page + 1 : page; // Show next page only if we're confident it exists
         
-        // Debug logging in development
-        if (import.meta.env.DEV) {
-          console.log('Server-side Pagination Debug:', {
-            requestedPage: page,
-            returnedCount,
-            perPage,
-            isFullPage,
-            hasNextPage,
-            knownTotal,
-            totalPages,
-            currentPage: page
-          });
-        }
-        
         return {
           addresses: addresses, // Return all addresses from API (already paginated server-side)
           total: knownTotal, // Only count what we know for sure
@@ -61,8 +42,6 @@ class AddressService {
         throw new Error('Failed to fetch addresses from server');
       }
     } catch (error) {
-      console.error('Get addresses API call failed:', error);
-      
       // Check if it's an authentication error
       if (error instanceof Error && error.message.includes('Session expired')) {
         // Re-throw authentication errors to trigger proper logout
@@ -79,8 +58,6 @@ class AddressService {
       const data = await httpService.post('/sua/postal-cards/create-address', addressData) as Address;
       return data;
     } catch (error) {
-      console.error('Create address API call failed:', error);
-      
       if (error instanceof Error && error.message.includes('Session expired')) {
         throw error;
       }
@@ -94,8 +71,6 @@ class AddressService {
       const data = await httpService.put(`/sua/postal-cards/update-address/${id}`, updates) as Address;
       return data;
     } catch (error) {
-      console.error('Update address API call failed:', error);
-      
       if (error instanceof Error && error.message.includes('Session expired')) {
         throw error;
       }
@@ -112,8 +87,6 @@ class AddressService {
         })
       });
     } catch (error) {
-      console.error('Delete address API call failed:', error);
-      
       if (error instanceof Error && error.message.includes('Session expired')) {
         throw error;
       }
@@ -130,8 +103,6 @@ class AddressService {
         })
       });
     } catch (error) {
-      console.error('Delete addresses API call failed:', error);
-      
       if (error instanceof Error && error.message.includes('Session expired')) {
         throw error;
       }
@@ -151,8 +122,6 @@ class AddressService {
       const data = await httpService.post('/sua/postal-cards/import-addresses', formData) as ImportAddressesResponse;
       return data;
     } catch (error) {
-      console.error('Import addresses API call failed:', error);
-      
       if (error instanceof Error && error.message.includes('Session expired')) {
         throw error;
       }
@@ -165,8 +134,6 @@ class AddressService {
     try {
       await httpService.post('/sua/postal-cards/validate-addresses', { addressIds });
     } catch (error) {
-      console.error('Validate addresses API call failed:', error);
-      
       if (error instanceof Error && error.message.includes('Session expired')) {
         throw error;
       }
@@ -180,8 +147,6 @@ class AddressService {
       const data = await httpService.post('/sua/postal-cards/check-duplicates', address) as Address[];
       return data || [];
     } catch (error) {
-      console.error('Check duplicates API call failed:', error);
-      
       if (error instanceof Error && error.message.includes('Session expired')) {
         throw error;
       }
