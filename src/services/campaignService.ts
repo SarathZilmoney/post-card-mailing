@@ -26,6 +26,11 @@ class CampaignService {
   }
 
   private mapBackendCampaignToFrontend(backendCampaign: Record<string, unknown>): Campaign {
+    // Debug logging in development
+    if (import.meta.env.DEV) {
+      console.log('Mapping backend campaign to frontend:', backendCampaign);
+    }
+
     // Handle address count - now comes from total_addresses field or default to 0
     const addressCount = (backendCampaign.total_addresses as number) || 0;
 
@@ -182,6 +187,18 @@ class CampaignService {
         
         payload.append('file', file);
         
+        // Log payload for debugging in development
+        if (import.meta.env.DEV) {
+          console.log('Create campaign payload being sent:', {
+            campaign_name: campaignName,
+            description: description,
+            start_date: startDate,
+            category_encrypted_id: category,
+            zipCode: zipCode,
+            hasFile: !!file
+          });
+        }
+        
       } else {
         // Handle object data (convert to FormData) - Note: This path doesn't support file uploads
         throw new Error('Postcard image is required. Please use the campaign creation form.');
@@ -261,6 +278,21 @@ class CampaignService {
         payload.append('file', file);
       }
       
+      // Log payload for debugging in development
+      if (import.meta.env.DEV) {
+        console.log('Edit campaign - received FormData:', {
+          campaign_id: campaignId,
+          encrypted_id: encryptedId,
+          campaign_name: campaignName,
+          description: description,
+          start_date: startDate,
+          category: category,
+          zipCode: zipCode,
+          hasFile: !!file
+        });
+        console.log('Edit campaign payload being sent with encryptedId:', encryptedId);
+      }
+      
       // Make API call to the update endpoint with encrypted_id in URL
       const response = await httpService.post(`/sua/postal-cards/update-campaign/${encryptedId}`, payload) as {success: boolean, message: string};
       
@@ -305,6 +337,11 @@ class CampaignService {
       const payload = {
         campaignId: encryptedId
       };
+      
+      // Log payload for debugging in development
+      if (import.meta.env.DEV) {
+        console.log('Run campaign payload being sent:', payload);
+      }
       
       // Make API call to the new endpoint
       const response = await httpService.post('/sua/postal-cards/sent-postal-card', payload) as {success: boolean, message: string, campaign?: Record<string, unknown>};
@@ -382,6 +419,11 @@ class CampaignService {
       // Validate required fields
       if (!encryptedId) {
         throw new Error('Campaign encrypted ID is required');
+      }
+      
+      // Log request for debugging in development
+      if (import.meta.env.DEV) {
+        console.log('Delete campaign request being sent for encrypted ID:', encryptedId);
       }
       
       // Make API call to the delete endpoint with encrypted_id in URL

@@ -14,6 +14,11 @@ class AddressService {
       const queryString = queryParams.toString();
       const endpoint = queryString ? `/sua/postal-cards/list-postal-addresses?${queryString}` : '/sua/postal-cards/list-postal-addresses';
       
+      // Debug logging
+      if (import.meta.env.DEV) {
+        console.log('API Request:', endpoint);
+      }
+      
       const response = await httpService.get(endpoint) as AddressResponse;
       
       if (response.success) {
@@ -31,6 +36,20 @@ class AddressService {
         // We only know for certain up to the current page
         const knownTotal = (page - 1) * perPage + returnedCount;
         const totalPages = hasNextPage ? page + 1 : page; // Show next page only if we're confident it exists
+        
+        // Debug logging in development
+        if (import.meta.env.DEV) {
+          console.log('Server-side Pagination Debug:', {
+            requestedPage: page,
+            returnedCount,
+            perPage,
+            isFullPage,
+            hasNextPage,
+            knownTotal,
+            totalPages,
+            currentPage: page
+          });
+        }
         
         return {
           addresses: addresses, // Return all addresses from API (already paginated server-side)
