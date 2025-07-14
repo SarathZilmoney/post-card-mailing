@@ -168,7 +168,7 @@ class CampaignService {
         payload.append('campaign_name', campaignName.trim());
         payload.append('description', description.trim());
         payload.append('start_date', startDate);
-        payload.append('category', category || ''); // Send category encrypted_id
+        payload.append('category', category || ''); // Send category ID instead of name
         
         // Add zip code if provided
         const zipCode = campaignData.get('zipCode') as string;
@@ -265,7 +265,7 @@ class CampaignService {
       payload.append('campaign_name', campaignName.trim());
       payload.append('description', description.trim());
       payload.append('start_date', startDate);
-      payload.append('category_encrypted_id', category || ''); // Send category encrypted_id
+      payload.append('category', category || ''); // Send category ID instead of name
       
       // Add zip code if provided
       const zipCode = campaignData.get('zipCode') as string;
