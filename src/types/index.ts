@@ -38,11 +38,13 @@ export interface CampaignRun {
 
 export interface Campaign {
   id: string;
+  encrypted_id: string;
   name: string;
   description: string;
   status: 'draft' | 'scheduled' | 'active' | 'completed' | 'paused';
   createdAt: string;
   scheduledDate?: string;
+  nextScheduledRunAt?: string;
   postcardDesign?: string;
   addressCount: number;
   sentCount: number;
@@ -62,32 +64,26 @@ export interface Campaign {
 }
 
 export interface Address {
-  id: number;
+  id?: number; // Made optional since it's not in the new response
   encrypted_id: string;
   name: string;
-  place_id: string;
-  google_id: string;
+  category_name: string; // Added category_name field from new response
   full_address: string;
+  address_line_1: string;
   street: string;
   postal_code: string;
   country_code: string;
   country: string;
   city: string;
   state: string;
-  us_state: string;
   latitude: string;
   longitude: string;
-  time_zone: string;
-  category: string;
   rating: string;
-  location_link: string;
   phone: string;
-  site: string;
+  email: string;
+  website: string;
   description: string | null;
   reviews: number;
-  working_hours: string | {
-    [key: string]: string;
-  };
   business_status: string;
   created_at: string;
   updated_at: string;
@@ -95,15 +91,7 @@ export interface Address {
 
 export interface AddressResponse {
   success: boolean;
-  data: {
-    data: Address[];
-    current_page: number;
-    per_page: number;
-    total: number;
-    last_page: number;
-    from: number;
-    to: number;
-  };
+  data: Address[];
 }
 
 export interface OutscrapperFilters {
@@ -169,13 +157,18 @@ export interface AlertContextType {
 export interface AddressCategory {
   id: number;
   name: string;
+  description: string;
+  is_active: boolean;
   address_count: number;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+  encrypted_id: string;
 }
 
 export interface AddressCategoriesResponse {
-  status: string;
+  success: boolean;
   data: AddressCategory[];
-  total_categories: number;
 }
 
 export interface ImportAddressesResponse {

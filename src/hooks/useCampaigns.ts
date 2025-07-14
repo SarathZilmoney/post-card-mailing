@@ -56,24 +56,24 @@ export const useCampaigns = () => {
     }
   };
 
-  const deleteCampaign = async (id: string): Promise<{success: boolean, message: string}> => {
+  const deleteCampaign = async (encryptedId: string): Promise<{success: boolean, message: string}> => {
     try {
-      const response = await campaignService.deleteCampaign(id);
+      const response = await campaignService.deleteCampaign(encryptedId);
       // Remove the campaign from the local state only after successful deletion
-      setCampaigns(prev => prev.filter(c => c.id !== id));
+      setCampaigns(prev => prev.filter(c => c.encrypted_id !== encryptedId));
       return response;
     } catch (err) {
       throw err;
     }
   };
 
-  const runCampaign = async (id: string): Promise<{success: boolean, message: string, campaign?: Campaign}> => {
+  const runCampaign = async (encryptedId: string): Promise<{success: boolean, message: string, campaign?: Campaign}> => {
     try {
-      const response = await campaignService.runCampaign(id);
+      const response = await campaignService.runCampaign(encryptedId);
       
       // If the campaign object is returned, update the local state
       if (response.campaign) {
-        setCampaigns(prev => prev.map(c => c.id === id ? response.campaign! : c));
+        setCampaigns(prev => prev.map(c => c.encrypted_id === encryptedId ? response.campaign! : c));
       } else {
         // If no campaign object is returned, just refetch the campaigns to get the updated status
         await fetchCampaigns(false);

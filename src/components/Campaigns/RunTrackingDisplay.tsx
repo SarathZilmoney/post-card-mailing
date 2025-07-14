@@ -77,7 +77,9 @@ export const RunTrackingDisplay: React.FC<RunTrackingDisplayProps> = ({
   };
 
   const getProgressPercentage = () => {
-    return Math.round((campaign.currentRun / campaign.maxRuns) * 100);
+    // Ensure progress never exceeds 100% by capping at maxRuns
+    const cappedCurrentRun = Math.min(campaign.currentRun, campaign.maxRuns);
+    return Math.round((cappedCurrentRun / campaign.maxRuns) * 100);
   };
 
   const getProgressColor = () => {
@@ -116,8 +118,8 @@ export const RunTrackingDisplay: React.FC<RunTrackingDisplayProps> = ({
       </div>
 
       {/* Progress Summary */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between text-sm">
+      <div className="mb-3">
+        <div className="flex items-center justify-between text-sm mb-2">
           <span className={`${
             isDark ? 'text-gray-300' : 'text-gray-700'
           }`}>
@@ -133,20 +135,52 @@ export const RunTrackingDisplay: React.FC<RunTrackingDisplayProps> = ({
         {/* Progress Bar */}
         <div className={`w-full ${
           isDark ? 'bg-dark-700' : 'bg-gray-200'
-        } rounded-full h-2`}>
+        } rounded-full h-2 mb-3`}>
           <div 
             className={`${getProgressColor()} h-2 rounded-full transition-all duration-300`}
             style={{ width: `${getProgressPercentage()}%` }}
           />
         </div>
 
+        {/* Next Scheduled Run - Show after 1st and 2nd runs */}
+        {campaign.nextScheduledRunAt && campaign.currentRun > 0 && campaign.currentRun < campaign.maxRuns && (
+          <div className={`${
+            isDark 
+              ? 'bg-blue-500/10 border-blue-400/20 text-blue-300' 
+              : 'bg-blue-50 border-blue-200 text-blue-700'
+          } border rounded-lg p-3 mb-3`}>
+            <div className="flex items-center">
+              <Clock className="h-4 w-4 mr-2" />
+              <span className="text-sm font-medium">
+                Next run scheduled: {formatDistanceToNow(new Date(campaign.nextScheduledRunAt), { addSuffix: true })}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Run completion message */}
+        {campaign.currentRun >= campaign.maxRuns && (
+          <div className={`${
+            isDark 
+              ? 'bg-green-500/10 border-green-400/20 text-green-300' 
+              : 'bg-green-50 border-green-200 text-green-700'
+          } border rounded-lg p-3 mb-3`}>
+            <div className="flex items-center">
+              <CheckCircle className="h-4 w-4 mr-2" />
+              <span className="text-sm font-medium">
+                Campaign completed all {campaign.maxRuns} runs
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Run Status Indicators */}
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 mb-3">
           {[...Array(campaign.maxRuns)].map((_, index) => {
             const runNumber = index + 1;
             const runData = runHistory.find(r => r.runNumber === runNumber);
-            const isActive = runNumber === campaign.currentRun;
-            const isCompleted = runNumber < campaign.currentRun;
+            const isActive = runNumber === campaign.currentRun && campaign.currentRun < campaign.maxRuns;
+            const isCompleted = runNumber <= campaign.currentRun;
             
             return (
               <div
@@ -233,7 +267,7 @@ export const RunTrackingDisplay: React.FC<RunTrackingDisplayProps> = ({
                     </span>
                   </div>
                   
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                  <div className="grid grid-cols-2 gap-2 text-xs">
                     <div>
                       <span className={`font-medium ${
                         isDark ? 'text-gray-300' : 'text-gray-700'

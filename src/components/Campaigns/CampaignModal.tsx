@@ -132,9 +132,9 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
   // Reset form when switching between edit and create modes
   useEffect(() => {
     if (open) {
-      // Find category ID from category name for edit mode
+      // Find category encrypted_id from category name for edit mode
       const categoryId = editCampaign?.category && categories.length > 0
-        ? categories.find(cat => cat.name === editCampaign.category)?.id?.toString() || ''
+        ? categories.find(cat => cat.name === editCampaign.category)?.encrypted_id || ''
         : '';
       
       reset({
@@ -168,7 +168,7 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
     }
   };
 
-  const selectedCategory = categories.find(cat => cat.id.toString() === watchedCategory);
+  const selectedCategory = categories.find(cat => cat.encrypted_id === watchedCategory);
   const maxAddressCount = selectedCategory ? selectedCategory.address_count : 1000;
 
   // Handle category selection change
@@ -351,6 +351,7 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
       
       // Log form data for debugging
       console.log('Form data being submitted:', data);
+      console.log('Edit campaign object:', editCampaign);
       
       const formData = new FormData();
       formData.append('name', data.name.trim());
@@ -360,14 +361,31 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
       formData.append('targetAddressCount', data.targetAddressCount.toString());
       formData.append('zipCode', data.zipCode.trim());
       
-      // For edit mode, add campaign ID
+      // For edit mode, add campaign ID and encrypted_id
       if (isEditMode && editCampaign) {
-        formData.append('campaign_id', editCampaign.id);
+        // Only append campaign_id if it exists (it might be undefined in new API response)
+        if (editCampaign.id) {
+          formData.append('campaign_id', editCampaign.id);
+        }
+        formData.append('encrypted_id', editCampaign.encrypted_id);
+        
+        // Log what's being added for edit mode
+        console.log('Edit mode - adding to FormData:', {
+          campaign_id: editCampaign.id,
+          encrypted_id: editCampaign.encrypted_id,
+          hasId: !!editCampaign.id
+        });
       }
       
       // Add file if provided
       if (selectedImage) {
         formData.append('postcardImage', selectedImage);
+      }
+      
+      // Log final FormData contents for debugging
+      console.log('Final FormData entries:');
+      for (let [key, value] of formData.entries()) {
+        console.log(`${key}:`, value);
       }
       
       let response;
@@ -537,7 +555,7 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
                     </option>
                     {categories.length > 0 ? (
                       categories.map((category) => (
-                        <option key={category.id} value={category.id.toString()}>
+                        <option key={category.encrypted_id} value={category.encrypted_id}>
                           {category.name} ({category.address_count} available)
                         </option>
                       ))

@@ -28,20 +28,19 @@ class CampaignService {
   }
 
   private mapBackendCampaignToFrontend(backendCampaign: Record<string, unknown>): Campaign {
-    // Parse postal addresses to count them
-    let addressCount = 0;
-    try {
-      if (backendCampaign.postal_addresses) {
-        const addresses = JSON.parse(backendCampaign.postal_addresses as string);
-        addressCount = Array.isArray(addresses) ? addresses.length : 0;
-      }
-    } catch (error) {
-      console.log('Failed to parse postal addresses:', error);
+    // Debug logging in development
+    if (import.meta.env.DEV) {
+      console.log('Mapping backend campaign to frontend:', backendCampaign);
     }
 
-    // Map backend status to frontend status
-    const mapStatus = (status: string): 'draft' | 'scheduled' | 'active' | 'completed' | 'paused' => {
-      switch (status?.toLowerCase()) {
+    // Handle address count - now comes from total_addresses field or default to 0
+    const addressCount = (backendCampaign.total_addresses as number) || 0;
+
+    // Map backend status to frontend status - handle null status
+    const mapStatus = (status: string | null): 'draft' | 'scheduled' | 'active' | 'completed' | 'paused' => {
+      if (!status) return 'draft'; // Default to draft if status is null
+      
+      switch (status.toLowerCase()) {
         case 'pending':
           return 'draft';
         case 'active':
@@ -59,54 +58,60 @@ class CampaignService {
       }
     };
 
-    // Parse run history from backend
-    const parseRunHistory = (runHistoryData: unknown): CampaignRun[] => {
-      try {
-        if (!runHistoryData) return [];
-        
-        const runs = Array.isArray(runHistoryData) ? runHistoryData : 
-                     typeof runHistoryData === 'string' ? JSON.parse(runHistoryData) : [];
-        
-        return runs.map((run: Record<string, unknown>) => ({
-          runNumber: run.run_number || 0,
-          startedAt: run.started_at || new Date().toISOString(),
-          completedAt: run.completed_at || undefined,
-          status: this.mapRunStatus(run.status),
-          sentCount: run.sent_count || 0,
-          deliveredCount: run.delivered_count || 0,
-          returnedCount: run.returned_count || 0,
-          cost: run.cost || 0,
-          errorMessage: run.error_message || undefined
-        }));
-      } catch (error) {
-        console.log('Failed to parse run history:', error);
-        return [];
-      }
-    };
+    // Extract category information - now it's an object or null
+    const categoryData = backendCampaign.category as Record<string, unknown> | null;
+    const categoryName = categoryData ? (categoryData.name as string) : undefined;
 
-    const runHistory = parseRunHistory(backendCampaign.run_history);
-    const currentRun = (backendCampaign.current_run as number) || 0;
-    const maxRuns = 3; // Fixed to 3 runs
-    const totalRuns = runHistory.length;
-    const canRunAgain = currentRun < maxRuns && (backendCampaign.status as string) !== 'completed';
-    const nextRunAvailable = currentRun < maxRuns && (runHistory.length === 0 || runHistory[runHistory.length - 1]?.status === 'completed');
+    // Extract postcard design from attachments
+    const attachments = backendCampaign.attachments as Array<Record<string, unknown>> | [];
+    const postcardDesign = attachments.length > 0 ? (attachments[0].public_url as string) : undefined;
+
+    // Handle run tracking with new backend fields
+    const runCount = (backendCampaign.run_count as number) || 0;
+    const maxRuns = 3; // Fixed to 3 runs as per requirements
+    const nextScheduledRunAt = backendCampaign.next_scheduled_run_at as string | null;
+    
+    // Calculate run status based on run_count - CAP AT MAXIMUM 3 RUNS
+    const currentRun = Math.min(runCount, maxRuns); // Cap at maxRuns
+    const totalRuns = Math.min(runCount, maxRuns); // Cap at maxRuns
+    const canRunAgain = currentRun < maxRuns;
+    const nextRunAvailable = canRunAgain;
+    
+    // Create run history based on run_count (placeholder data since we don't have detailed run history)
+    // Only create history for runs up to maxRuns
+    const runHistory: CampaignRun[] = [];
+    for (let i = 1; i <= Math.min(runCount, maxRuns); i++) {
+      runHistory.push({
+        runNumber: i,
+        startedAt: new Date().toISOString(), // Placeholder - would need actual data from backend
+        completedAt: new Date().toISOString(), // Placeholder - would need actual data from backend
+        status: 'completed',
+        sentCount: 0, // Placeholder - would need actual data from backend
+        deliveredCount: 0, // Placeholder - would need actual data from backend
+        returnedCount: 0, // Placeholder - would need actual data from backend
+        cost: 0, // Placeholder - would need actual data from backend
+        errorMessage: undefined
+      });
+    }
 
     return {
-      id: (backendCampaign.id as number).toString(),
+      id: (backendCampaign.id as number)?.toString() || '', // Handle case where id might not exist
+      encrypted_id: (backendCampaign.encrypted_id as string) || '',
       name: (backendCampaign.campaign_name as string) || '',
       description: (backendCampaign.description as string) || '',
-      status: mapStatus(backendCampaign.status as string),
+      status: mapStatus(backendCampaign.status as string | null),
       createdAt: (backendCampaign.created_at as string) || new Date().toISOString(),
       scheduledDate: (backendCampaign.start_date as string) || undefined,
-      postcardDesign: (backendCampaign.file_path as string) || undefined,
-      category: (backendCampaign.category_id as string) || undefined, // category_id contains the category name
-      zipCode: (backendCampaign.zip_code as string) || undefined,
+      nextScheduledRunAt: nextScheduledRunAt || undefined,
+      postcardDesign,
+      category: categoryName,
+      zipCode: undefined, // Not in new response
       addressCount,
       targetAddressCount: addressCount, // Use same count for now
-      sentCount: runHistory.reduce((sum, run) => sum + run.sentCount, 0),
-      deliveredCount: runHistory.reduce((sum, run) => sum + run.deliveredCount, 0),
-      returnedCount: runHistory.reduce((sum, run) => sum + run.returnedCount, 0),
-      cost: runHistory.reduce((sum, run) => sum + run.cost, 0),
+      sentCount: 0, // Default to 0 since not in new response
+      deliveredCount: 0, // Default to 0 since not in new response
+      returnedCount: 0, // Default to 0 since not in new response
+      cost: 0, // Default to 0 since not in new response
       // Run tracking fields
       currentRun,
       totalRuns,
@@ -163,7 +168,7 @@ class CampaignService {
         payload.append('campaign_name', campaignName.trim());
         payload.append('description', description.trim());
         payload.append('start_date', startDate);
-        payload.append('category_id', category || ''); // Send category ID instead of name
+        payload.append('category', category || ''); // Send category ID instead of name
         
         // Add zip code if provided
         const zipCode = campaignData.get('zipCode') as string;
@@ -186,7 +191,14 @@ class CampaignService {
         
         // Log payload for debugging in development
         if (import.meta.env.DEV) {
-          console.log('Campaign payload being sent');
+          console.log('Create campaign payload being sent:', {
+            campaign_name: campaignName,
+            description: description,
+            start_date: startDate,
+            category_encrypted_id: category,
+            zipCode: zipCode,
+            hasFile: !!file
+          });
         }
         
       } else {
@@ -195,7 +207,7 @@ class CampaignService {
       }
       
       // Make API call to the correct endpoint
-      const response = await httpService.post('/sua/postal-cards/create-campaigns', payload);
+      const response = await httpService.post('/sua/postal-cards/create-campaign', payload) as {success: boolean, message: string};
       
       // Handle the response format - backend only returns success message, not campaign data
       if (response.success) {
@@ -230,10 +242,11 @@ class CampaignService {
       const description = campaignData.get('description') as string;
       const startDate = campaignData.get('startDate') as string;
       const category = campaignData.get('category') as string;
+      const encryptedId = campaignData.get('encrypted_id') as string;
       
       // Validate required fields
-      if (!campaignId) {
-        throw new Error('Campaign ID is required');
+      if (!encryptedId) {
+        throw new Error('Encrypted ID is required');
       }
       if (!campaignName?.trim()) {
         throw new Error('Campaign name is required');
@@ -245,11 +258,14 @@ class CampaignService {
         throw new Error('Start date is required');
       }
       
-      payload.append('campaign_id', campaignId);
+      // Only append campaign_id if it's available (for backward compatibility)
+      if (campaignId) {
+        payload.append('campaign_id', campaignId);
+      }
       payload.append('campaign_name', campaignName.trim());
       payload.append('description', description.trim());
       payload.append('start_date', startDate);
-      payload.append('category_id', category || ''); // Send category ID instead of name
+      payload.append('category', category || ''); // Send category ID instead of name
       
       // Add zip code if provided
       const zipCode = campaignData.get('zipCode') as string;
@@ -269,11 +285,21 @@ class CampaignService {
       
       // Log payload for debugging in development
       if (import.meta.env.DEV) {
-        console.log('Edit campaign payload being sent');
+        console.log('Edit campaign - received FormData:', {
+          campaign_id: campaignId,
+          encrypted_id: encryptedId,
+          campaign_name: campaignName,
+          description: description,
+          start_date: startDate,
+          category: category,
+          zipCode: zipCode,
+          hasFile: !!file
+        });
+        console.log('Edit campaign payload being sent with encryptedId:', encryptedId);
       }
       
-      // Make API call to the edit endpoint
-      const response = await httpService.post('/sua/postal-cards/edit-campaigns', payload);
+      // Make API call to the update endpoint with encrypted_id in URL
+      const response = await httpService.post(`/sua/postal-cards/update-campaign/${encryptedId}`, payload) as {success: boolean, message: string};
       
       // Handle the response format
       if (response.success) {
@@ -301,33 +327,33 @@ class CampaignService {
   async updateCampaign(id: string, updates: Partial<Campaign>): Promise<Campaign> {
     try {
       // Make actual API call to backend
-      const data = await httpService.put(`/campaigns/${id}`, updates);
-      return data;
+      const data = await httpService.put(`/campaigns/${id}`, updates) as Record<string, unknown>;
+      return this.mapBackendCampaignToFrontend(data);
     } catch (error) {
       console.log('Update campaign API call failed:', error);
       throw error;
     }
   }
 
-  async runCampaign(id: string): Promise<{success: boolean, message: string, campaign?: Campaign}> {
+  async runCampaign(encryptedId: string): Promise<{success: boolean, message: string, campaign?: Campaign}> {
     try {
       // Validate required fields
-      if (!id) {
-        throw new Error('Campaign ID is required');
+      if (!encryptedId) {
+        throw new Error('Campaign encrypted ID is required');
       }
       
-      // Prepare the payload for the backend API
+      // Prepare the payload for the backend API with new format
       const payload = {
-        campaign_id: id
+        campaignId: encryptedId
       };
       
       // Log payload for debugging in development
       if (import.meta.env.DEV) {
-        console.log('Run campaign payload being sent');
+        console.log('Run campaign payload being sent:', payload);
       }
       
-      // Make API call to the correct endpoint
-      const response = await httpService.post('/sua/sent-postal-cards', payload);
+      // Make API call to the new endpoint
+      const response = await httpService.post('/sua/postal-cards/sent-postal-card', payload) as {success: boolean, message: string, campaign?: Record<string, unknown>};
       
       // Handle the response format
       if (response.success) {
@@ -372,15 +398,15 @@ class CampaignService {
       
       if (response.success && response.data) {
         return response.data.map((run: Record<string, unknown>) => ({
-          runNumber: run.run_number || 0,
-          startedAt: run.started_at || new Date().toISOString(),
-          completedAt: run.completed_at || undefined,
-          status: this.mapRunStatus(run.status),
-          sentCount: run.sent_count || 0,
-          deliveredCount: run.delivered_count || 0,
-          returnedCount: run.returned_count || 0,
-          cost: run.cost || 0,
-          errorMessage: run.error_message || undefined
+          runNumber: (run.run_number as number) || 0,
+          startedAt: (run.started_at as string) || new Date().toISOString(),
+          completedAt: (run.completed_at as string) || undefined,
+          status: this.mapRunStatus(run.status as string),
+          sentCount: (run.sent_count as number) || 0,
+          deliveredCount: (run.delivered_count as number) || 0,
+          returnedCount: (run.returned_count as number) || 0,
+          cost: (run.cost as number) || 0,
+          errorMessage: (run.error_message as string) || undefined
         }));
       } else {
         console.log('Failed to fetch run history:', response);
@@ -395,33 +421,28 @@ class CampaignService {
   async stopCampaign(id: string): Promise<Campaign> {
     try {
       // Make actual API call to backend
-      const data = await httpService.post(`/campaigns/${id}/stop`);
-      return data;
+      const data = await httpService.post(`/campaigns/${id}/stop`) as Record<string, unknown>;
+      return this.mapBackendCampaignToFrontend(data);
     } catch (error) {
       console.log('Stop campaign API call failed:', error);
       throw error;
     }
   }
 
-  async deleteCampaign(id: string): Promise<{success: boolean, message: string}> {
+  async deleteCampaign(encryptedId: string): Promise<{success: boolean, message: string}> {
     try {
       // Validate required fields
-      if (!id) {
-        throw new Error('Campaign ID is required');
+      if (!encryptedId) {
+        throw new Error('Campaign encrypted ID is required');
       }
       
-      // Prepare the payload for the backend API
-      const payload = {
-        campaign_id: id
-      };
-      
-      // Log payload for debugging in development
+      // Log request for debugging in development
       if (import.meta.env.DEV) {
-        console.log('Delete campaign payload being sent');
+        console.log('Delete campaign request being sent for encrypted ID:', encryptedId);
       }
       
-      // Make API call to the delete endpoint
-      const response = await httpService.post('/sua/postal-cards/delete-campaigns', payload);
+      // Make API call to the delete endpoint with encrypted_id in URL
+      const response = await httpService.delete(`/sua/postal-cards/campaign/${encryptedId}`) as {success: boolean, message: string};
       
       // Handle the response format
       if (response.success) {
@@ -438,6 +459,15 @@ class CampaignService {
         if (error.message.includes('422') || error.message.includes('Unprocessable')) {
           throw new Error('Invalid campaign ID. Please refresh and try again.');
         }
+        if (error.message.includes('404')) {
+          throw new Error('Campaign not found. Please refresh the page and try again.');
+        }
+        if (error.message.includes('403')) {
+          throw new Error('Access denied. You do not have permission to delete this campaign.');
+        }
+        if (error.message.includes('500')) {
+          throw new Error('Server error occurred while deleting the campaign. Please try again later.');
+        }
       }
       
       throw error;
@@ -447,7 +477,7 @@ class CampaignService {
   async getCampaignAddresses(campaignId: string): Promise<Address[]> {
     try {
       // Make actual API call to backend
-      const data = await httpService.get(`/campaigns/${campaignId}/addresses`);
+      const data = await httpService.get(`/campaigns/${campaignId}/addresses`) as Address[];
       return data;
     } catch (error) {
       console.log('Get campaign addresses API call failed:', error);
