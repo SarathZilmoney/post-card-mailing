@@ -131,14 +131,26 @@ class HttpService {
     const backendUrl = urlService.getBackendUrl();
     const url = `${backendUrl}${endpoint}`;
     
+    const isFormData = data instanceof FormData;
+    let headers: HeadersInit;
+    
+    if (isFormData) {
+      // For FormData, don't set Content-Type header - let browser set it
+      const authHeaders = this.getAuthHeaders();
+      const { 'Content-Type': contentType, ...headersWithoutContentType } = authHeaders as Record<string, string>;
+      headers = headersWithoutContentType;
+    } else {
+      headers = this.getAuthHeaders();
+    }
+    
     try {
       const response = await fetch(url, {
         method: 'PUT',
         headers: {
-          ...this.getAuthHeaders(),
+          ...headers,
           ...options?.headers,
         },
-        body: JSON.stringify(data),
+        body: isFormData ? data : JSON.stringify(data),
         ...options,
       });
 

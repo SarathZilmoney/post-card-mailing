@@ -8,7 +8,7 @@ class CategoryService {
       const response = await httpService.get('/sua/postal-cards/categories') as AddressCategoriesResponse;
       
       // Handle the new response format
-      if (response.status === 'success' && Array.isArray(response.data)) {
+      if (response.success && Array.isArray(response.data)) {
         return response.data;
       } else {
         return [];
@@ -26,10 +26,10 @@ class CategoryService {
       const response = await httpService.get('/sua/postal-cards/categories') as AddressCategoriesResponse;
       
       // Handle the new response format
-      if (response.status === 'success' && Array.isArray(response.data)) {
+      if (response.success && Array.isArray(response.data)) {
         return {
           categories: response.data,
-          totalCount: response.total_categories
+          totalCount: response.data.length // Calculate total from array length since API doesn't provide it
         };
       } else {
         return { categories: [], totalCount: 0 };

@@ -4,33 +4,58 @@ import { httpService } from './httpService';
 class AddressService {
   async getAddresses(page = 1, filters?: Record<string, unknown>): Promise<{ addresses: Address[]; total: number; currentPage: number; totalPages: number }> {
     try {
+      // Request server-side pagination with 10 results per page
       const queryParams = new URLSearchParams({
         page: page.toString(),
+        per_page: '10',
         ...filters
       });
       
       const queryString = queryParams.toString();
       const endpoint = queryString ? `/sua/postal-cards/list-postal-addresses?${queryString}` : '/sua/postal-cards/list-postal-addresses';
       
+      // Debug logging
+      if (import.meta.env.DEV) {
+        console.log('API Request:', endpoint);
+      }
+      
       const response = await httpService.get(endpoint) as AddressResponse;
       
       if (response.success) {
-        const responseData = response.data;
-        const addresses = responseData.data || [];
+        const addresses = response.data || [];
         
-        // Parse working_hours from JSON string to object for each address
-        const parsedAddresses = addresses.map(address => ({
-          ...address,
-          working_hours: typeof address.working_hours === 'string' 
-            ? JSON.parse(address.working_hours) 
-            : address.working_hours
-        }));
+        // Since API doesn't return pagination metadata, we use a different approach
+        const perPage = 10;
+        const returnedCount = addresses.length;
+        
+        // Determine if there are more pages based on returned count
+        const isFullPage = returnedCount === perPage;
+        const hasNextPage = isFullPage;
+        
+        // Instead of estimating misleading totals, we'll use a more honest approach
+        // We only know for certain up to the current page
+        const knownTotal = (page - 1) * perPage + returnedCount;
+        const totalPages = hasNextPage ? page + 1 : page; // Show next page only if we're confident it exists
+        
+        // Debug logging in development
+        if (import.meta.env.DEV) {
+          console.log('Server-side Pagination Debug:', {
+            requestedPage: page,
+            returnedCount,
+            perPage,
+            isFullPage,
+            hasNextPage,
+            knownTotal,
+            totalPages,
+            currentPage: page
+          });
+        }
         
         return {
-          addresses: parsedAddresses,
-          total: responseData.total,
-          currentPage: responseData.current_page,
-          totalPages: responseData.last_page
+          addresses: addresses, // Return all addresses from API (already paginated server-side)
+          total: knownTotal, // Only count what we know for sure
+          currentPage: page,
+          totalPages: totalPages
         };
       } else {
         throw new Error('Failed to fetch addresses from server');

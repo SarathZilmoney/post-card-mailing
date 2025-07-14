@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Search, Filter, Eye, Edit, Trash2, MoreHorizontal, Mail, PlayCircle, Square, RotateCcw, CheckCircle } from 'lucide-react';
+import { Plus, Search, Filter, Eye, Edit, Trash2, MoreHorizontal, Mail, PlayCircle, Square, RotateCcw, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { useCampaigns } from '../hooks/useCampaigns';
 import { useTheme } from '../context/ThemeContext';
 import { useAlert } from '../context/AlertContext';
@@ -18,6 +18,8 @@ export const Campaigns: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
   const [expandedCampaigns, setExpandedCampaigns] = useState<Set<string>>(new Set());
+  const [isActiveSectionExpanded, setIsActiveSectionExpanded] = useState(true);
+  const [isCompletedSectionExpanded, setIsCompletedSectionExpanded] = useState(true);
 
 
 
@@ -28,7 +30,20 @@ export const Campaigns: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const handleDelete = async (id: string, campaignName: string) => {
+  // Separate campaigns into active and completed
+  const activeCampaigns = filteredCampaigns.filter(campaign => {
+    // A campaign is completed if it has 'completed' status OR has reached maximum runs
+    const isCompleted = campaign.status === 'completed' || campaign.currentRun >= campaign.maxRuns;
+    return !isCompleted;
+  });
+
+  const completedCampaigns = filteredCampaigns.filter(campaign => {
+    // A campaign is completed if it has 'completed' status OR has reached maximum runs
+    const isCompleted = campaign.status === 'completed' || campaign.currentRun >= campaign.maxRuns;
+    return isCompleted;
+  });
+
+  const handleDelete = async (encryptedId: string, campaignName: string) => {
     alert.showAlert({
       type: 'warning',
       title: 'Delete Campaign',
@@ -37,14 +52,18 @@ export const Campaigns: React.FC = () => {
       cancelText: 'Cancel',
       onConfirm: async () => {
         try {
-          const response = await deleteCampaign(id);
+          const response = await deleteCampaign(encryptedId);
           const successMessage = response.message || 'Campaign deleted successfully';
           
           // Show both toast and success alert
           toast.success(successMessage);
           alert.success(successMessage, {
             title: 'Campaign Deleted',
-            duration: 4000
+            duration: 3000,
+            onClose: () => {
+              // Refresh the campaigns list after successful deletion
+              refetch();
+            }
           });
         } catch (error: any) {
           const errorMessage = error?.message || 'Failed to delete campaign';
@@ -63,8 +82,8 @@ export const Campaigns: React.FC = () => {
 
 
 
-  const handleRunCampaign = async (id: string, campaignName: string) => {
-    const campaign = campaigns.find(c => c.id === id);
+  const handleRunCampaign = async (encryptedId: string, campaignName: string) => {
+    const campaign = campaigns.find(c => c.encrypted_id === encryptedId);
     if (!campaign) return;
 
     // Check if campaign can run again
@@ -90,7 +109,7 @@ export const Campaigns: React.FC = () => {
       cancelText: 'Cancel',
       onConfirm: async () => {
         try {
-          const response = await runCampaign(id);
+          const response = await runCampaign(encryptedId);
           
           if (response.success) {
             const successMessage = response.message || `Campaign run ${runNumber} started successfully!`;
@@ -304,9 +323,45 @@ export const Campaigns: React.FC = () => {
         </div>
       </div>
 
-      {/* Campaign Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
-        {filteredCampaigns.map((campaign) => (
+      {/* Active Campaigns Section */}
+      {activeCampaigns.length > 0 && (
+        <div className="space-y-4">
+          <button
+            onClick={() => setIsActiveSectionExpanded(!isActiveSectionExpanded)}
+            className={`w-full flex items-center justify-between p-4 rounded-lg transition-all duration-200 ${
+              isDark 
+                ? 'hover:bg-gray-800/50 hover:border-blue-400/30' 
+                : 'hover:bg-blue-50/50 hover:border-blue-200'
+            } border border-transparent`}
+          >
+            <h2 className={`text-xl font-semibold ${
+              isDark ? 'text-white' : 'text-gray-900'
+            } flex items-center`}>
+              <div className={`w-2 h-2 rounded-full mr-3 ${
+                isDark ? 'bg-blue-400' : 'bg-blue-500'
+              }`}></div>
+              Active Campaigns
+              {isActiveSectionExpanded ? (
+                <ChevronUp className={`ml-3 h-5 w-5 ${
+                  isDark ? 'text-gray-400' : 'text-gray-600'
+                } transition-transform duration-200`} />
+              ) : (
+                <ChevronDown className={`ml-3 h-5 w-5 ${
+                  isDark ? 'text-gray-400' : 'text-gray-600'
+                } transition-transform duration-200`} />
+              )}
+            </h2>
+            <span className={`text-sm px-3 py-1 rounded-full ${
+              isDark 
+                ? 'bg-blue-500/20 text-blue-300 border border-blue-400/30' 
+                : 'bg-blue-100 text-blue-700 border border-blue-200'
+            }`}>
+              {activeCampaigns.length} campaign{activeCampaigns.length !== 1 ? 's' : ''}
+            </span>
+          </button>
+          {isActiveSectionExpanded && (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 animate-fadeIn">
+            {activeCampaigns.map((campaign) => (
           <div key={campaign.id} className={`${
             isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
           } border rounded-xl p-4 sm:p-6 hover:shadow-lg transition-all duration-300 group`}>
@@ -344,7 +399,7 @@ export const Campaigns: React.FC = () => {
                 
                 {/* Delete Button */}
                 <button
-                  onClick={() => handleDelete(campaign.id, campaign.name)}
+                                                onClick={() => handleDelete(campaign.encrypted_id, campaign.name)}
                   className={`p-1 ${
                     isDark 
                       ? 'text-gray-400 hover:text-red-400 hover:bg-dark-800/50' 
@@ -437,7 +492,7 @@ export const Campaigns: React.FC = () => {
 
             {/* Action Buttons */}
             <div className="flex gap-2">
-              {campaign.status === 'draft' || campaign.status === 'paused' || (campaign.canRunAgain && campaign.nextRunAvailable) ? (
+              {(campaign.status === 'draft' || campaign.status === 'paused' || (campaign.canRunAgain && campaign.nextRunAvailable)) && campaign.currentRun < campaign.maxRuns ? (
                 (() => {
                   // Check if start date is in the future to determine button type
                   // Future date = "Start Early" (blue), Current/Past date = "Run Campaign" (green)
@@ -450,7 +505,7 @@ export const Campaigns: React.FC = () => {
                   
                   return (
                     <button
-                      onClick={() => handleRunCampaign(campaign.id, campaign.name)}
+                                                onClick={() => handleRunCampaign(campaign.encrypted_id, campaign.name)}
                       className={`flex-1 flex items-center justify-center px-3 sm:px-4 py-2.5 rounded-lg font-medium transition-all duration-200 shadow-sm ${
                         isFutureDate && isFirstRun
                           ? isDark
@@ -507,11 +562,204 @@ export const Campaigns: React.FC = () => {
               ) : null}
             </div>
           </div>
-        ))}
-      </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Completed Campaigns Section */}
+      {completedCampaigns.length > 0 && (
+        <div className="space-y-4">
+          <button
+            onClick={() => setIsCompletedSectionExpanded(!isCompletedSectionExpanded)}
+            className={`w-full flex items-center justify-between p-4 rounded-lg transition-all duration-200 ${
+              isDark 
+                ? 'hover:bg-gray-800/50 hover:border-green-400/30' 
+                : 'hover:bg-green-50/50 hover:border-green-200'
+            } border border-transparent`}
+          >
+            <h2 className={`text-xl font-semibold ${
+              isDark ? 'text-white' : 'text-gray-900'
+            } flex items-center`}>
+              <div className={`w-2 h-2 rounded-full mr-3 ${
+                isDark ? 'bg-green-400' : 'bg-green-500'
+              }`}></div>
+              Completed Campaigns
+              {isCompletedSectionExpanded ? (
+                <ChevronUp className={`ml-3 h-5 w-5 ${
+                  isDark ? 'text-gray-400' : 'text-gray-600'
+                } transition-transform duration-200`} />
+              ) : (
+                <ChevronDown className={`ml-3 h-5 w-5 ${
+                  isDark ? 'text-gray-400' : 'text-gray-600'
+                } transition-transform duration-200`} />
+              )}
+            </h2>
+            <span className={`text-sm px-3 py-1 rounded-full ${
+              isDark 
+                ? 'bg-green-500/20 text-green-300 border border-green-400/30' 
+                : 'bg-green-100 text-green-700 border border-green-200'
+            }`}>
+              {completedCampaigns.length} campaign{completedCampaigns.length !== 1 ? 's' : ''}
+            </span>
+          </button>
+          {isCompletedSectionExpanded && (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 animate-fadeIn">
+              {completedCampaigns.map((campaign) => (
+              <div key={campaign.id} className={`${
+                isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+              } border rounded-xl p-4 sm:p-6 hover:shadow-lg transition-all duration-300 group`}>
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <span className={`inline-block px-2 sm:px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(campaign.status)}`}>
+                      {getStatusText(campaign.status)}
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-1 sm:space-x-2">
+                    {/* View Details Button */}
+                    <button
+                      className={`p-1 ${
+                        isDark 
+                          ? 'text-gray-400 hover:text-purple-400 hover:bg-dark-800/50' 
+                          : 'text-light-600 hover:text-brand-primary-600 hover:bg-light-200/60'
+                      } rounded transition-colors`}
+                      title="View Details"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </button>
+                    
+                    {/* Edit Button */}
+                    <button
+                      onClick={() => handleEditCampaign(campaign)}
+                      className={`p-1 ${
+                        isDark 
+                          ? 'text-gray-400 hover:text-blue-400 hover:bg-dark-800/50' 
+                          : 'text-light-600 hover:text-blue-600 hover:bg-light-200/60'
+                      } rounded transition-colors`}
+                      title="Edit Campaign"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </button>
+                    
+                    {/* Delete Button */}
+                    <button
+                      onClick={() => handleDelete(campaign.encrypted_id, campaign.name)}
+                      className={`p-1 ${
+                        isDark 
+                          ? 'text-gray-400 hover:text-red-400 hover:bg-dark-800/50' 
+                          : 'text-light-600 hover:text-red-600 hover:bg-light-200/60'
+                      } rounded transition-colors`}
+                      title="Delete Campaign"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                    
+                    {/* More Options Button - Hidden on mobile */}
+                    <button
+                      className={`hidden sm:block p-1 ${
+                        isDark 
+                          ? 'text-gray-400 hover:text-purple-400 hover:bg-dark-800/50' 
+                          : 'text-light-600 hover:text-brand-primary-600 hover:bg-light-200/60'
+                      } rounded transition-colors`}
+                      title="More Options"
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <h3 className={`text-lg font-semibold ${
+                    isDark ? 'text-white' : 'text-gray-900'
+                  } mb-2 line-clamp-1`}>
+                    {campaign.name}
+                  </h3>
+                  <p className={`text-sm ${
+                    isDark ? 'text-gray-400' : 'text-gray-600'
+                  } mb-3 line-clamp-2`}>
+                    {campaign.description}
+                  </p>
+                  <p className={`text-xs ${
+                    isDark ? 'text-gray-500' : 'text-gray-500'
+                  }`}>
+                    {formatDistanceToNow(new Date(campaign.createdAt), { addSuffix: true })}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4 text-center mb-4">
+                  <div>
+                    <div className={`text-base sm:text-lg font-semibold ${
+                      isDark ? 'text-white' : 'text-gray-900'
+                    }`}>
+                      {campaign.addressCount || 0}
+                    </div>
+                    <div className={`text-xs ${
+                      isDark ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
+                      Addresses
+                    </div>
+                  </div>
+                  <div>
+                    <div className={`text-base sm:text-lg font-semibold ${
+                      isDark ? 'text-white' : 'text-gray-900'
+                    }`}>
+                      {campaign.sentCount || 0}
+                    </div>
+                    <div className={`text-xs ${
+                      isDark ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
+                      Sent
+                    </div>
+                  </div>
+                  <div>
+                    <div className={`text-base sm:text-lg font-semibold ${
+                      isDark ? 'text-white' : 'text-gray-900'
+                    }`}>
+                      ${campaign.cost || 0}
+                    </div>
+                    <div className={`text-xs ${
+                      isDark ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
+                      Cost
+                    </div>
+                  </div>
+                </div>
+
+                {/* Run Progress Display */}
+                <div className="mb-4">
+                  <RunTrackingDisplay 
+                    campaign={campaign} 
+                    onGetRunHistory={getRunHistory}
+                    showExpanded={expandedCampaigns.has(campaign.id)}
+                  />
+                </div>
+
+                {/* Completion Status */}
+                <div className="flex gap-2">
+                  <div className={`flex-1 flex items-center justify-center px-3 sm:px-4 py-2.5 rounded-lg ${
+                    isDark
+                      ? 'bg-gray-700/50 text-gray-400 border border-gray-600'
+                      : 'bg-gray-100 text-gray-500 border border-gray-200'
+                  }`}> 
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    <span className="text-sm font-medium">
+                      <span className="hidden sm:inline">
+                        {campaign.currentRun >= campaign.maxRuns ? 'All Runs Complete' : 'Campaign Completed'}
+                      </span>
+                      <span className="sm:hidden">Complete</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Empty State */}
-      {filteredCampaigns.length === 0 && (
+      {(activeCampaigns.length === 0 && completedCampaigns.length === 0) && (
         <div className="text-center py-8 sm:py-12">
           <div className="max-w-md mx-auto px-4">
             <div className="w-16 h-16 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">

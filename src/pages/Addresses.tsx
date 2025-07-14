@@ -6,6 +6,8 @@ import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
 import { alertService } from '../services/alertService';
+import { categoryService } from '../services/categoryService';
+import { AddressCategory } from '../types';
 
 export const Addresses: React.FC = () => {
   const { addresses, total, currentPage, totalPages, loading, error, goToPage, goToNextPage, goToPreviousPage, deleteAddress, importAddresses, refetch } = useAddresses();
@@ -14,9 +16,10 @@ export const Addresses: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+  const [categories, setCategories] = useState<AddressCategory[]>([]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -36,22 +39,21 @@ export const Addresses: React.FC = () => {
     const matchesSearch = 
       (address.name && address.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (address.full_address && address.full_address.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (address.phone && address.phone.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (address.category && address.category.toLowerCase().includes(searchTerm.toLowerCase()));
+      (address.phone && address.phone.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesStatus = statusFilter === 'all' || (address.business_status && address.business_status.toLowerCase() === statusFilter.toLowerCase());
-    const matchesCategory = categoryFilter === 'all' || (address.category && address.category.toLowerCase() === categoryFilter.toLowerCase());
+    const matchesCategory = categoryFilter === 'all' || (address.category_name && address.category_name.toLowerCase() === categoryFilter.toLowerCase());
     
     return matchesSearch && matchesStatus && matchesCategory;
   }) || [];
 
-  const toggleRowExpansion = (addressId: number) => {
+  const toggleRowExpansion = (encryptedId: string) => {
     setExpandedRows(prev => {
       const newExpanded = new Set(prev);
-      if (newExpanded.has(addressId)) {
-        newExpanded.delete(addressId);
+      if (newExpanded.has(encryptedId)) {
+        newExpanded.delete(encryptedId);
       } else {
-        newExpanded.add(addressId);
+        newExpanded.add(encryptedId);
       }
       return newExpanded;
     });
@@ -263,7 +265,7 @@ export const Addresses: React.FC = () => {
     const workingHours = formatWorkingHours(address.working_hours);
     
     return (
-      <tr key={`${address.id}-expanded`} className={`${
+      <tr key={`${address.encrypted_id}-expanded`} className={`${
         isDark ? 'bg-dark-900/50' : 'bg-gray-50/50'
       } border-t-0 animate-slideDown`}>
         <td colSpan={8} className="px-3 sm:px-6 py-4 animate-fadeIn">
@@ -434,7 +436,7 @@ export const Addresses: React.FC = () => {
             isDark ? 'text-gray-400' : 'text-gray-600'
           } text-center sm:text-left`}>
             {totalPages > 1 ? (
-              <>Showing page {currentPage} of {totalPages} ({total} total addresses)</>
+              <>Showing page {currentPage} ({(currentPage - 1) * 10 + 1}-{total} addresses) {totalPages > currentPage ? '• More pages available' : ''}</>
             ) : (
               <>Showing all {total} addresses</>
             )}
@@ -543,10 +545,19 @@ export const Addresses: React.FC = () => {
     );
   };
 
-  // Get unique categories for filter (only if addresses exist)
-  const categories = addresses && addresses.length > 0 
-    ? [...new Set(addresses.map(addr => addr.category).filter(category => category != null && category !== ''))]
-    : [];
+  // Load categories for filtering
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const categoriesData = await categoryService.getAddressCategories();
+        setCategories(categoriesData);
+      } catch (error) {
+        console.error('Failed to load categories:', error);
+      }
+    };
+    
+    loadCategories();
+  }, []);
 
   if (loading) {
     return (
@@ -744,13 +755,13 @@ export const Addresses: React.FC = () => {
                                 </button>
                                 {categories.map(category => (
                                   <button
-                                    key={category}
+                                    key={category.encrypted_id}
                                     onClick={() => {
-                                      setCategoryFilter(category);
+                                      setCategoryFilter(category.name);
                                       setCategoryDropdownOpen(false);
                                     }}
                                     className={`block w-full text-left px-3 py-2 text-sm ${
-                                      categoryFilter === category
+                                      categoryFilter === category.name
                                         ? isDark
                                           ? 'bg-purple-600 text-white'
                                           : 'bg-purple-100 text-purple-900'
@@ -759,7 +770,7 @@ export const Addresses: React.FC = () => {
                                           : 'text-gray-700 hover:bg-gray-50'
                                     } transition-colors`}
                                   >
-                                    {category && category.charAt(0).toUpperCase() + category.slice(1)}
+                                    {category.name && category.name.charAt(0).toUpperCase() + category.name.slice(1)}
                                   </button>
                                 ))}
                               </div>
@@ -884,11 +895,11 @@ export const Addresses: React.FC = () => {
                   isDark ? 'divide-dark-600' : 'divide-gray-200'
                 }`}>
                   {filteredAddresses.map((address) => (
-                    <React.Fragment key={address.id}>
+                    <React.Fragment key={address.encrypted_id}>
                       <tr className={`${
                         isDark ? 'hover:bg-dark-800/30' : 'hover:bg-gray-50'
                       } transition-colors ${
-                        expandedRows.has(address.id) ? (isDark ? 'bg-dark-800/20' : 'bg-gray-50/50') : ''
+                        expandedRows.has(address.encrypted_id) ? (isDark ? 'bg-dark-800/20' : 'bg-gray-50/50') : ''
                       }`}>
                         <td className="px-2 sm:px-4 py-4 w-32 sm:w-40">
                           <div className={`text-sm font-medium truncate ${
@@ -939,12 +950,12 @@ export const Addresses: React.FC = () => {
                             <Phone className="h-3 w-3 inline mr-1" />
                             {address.phone || 'N/A'}
                           </div>
-                          {address.site && (
+                          {address.website && (
                             <div className={`text-xs ${
                               isDark ? 'text-gray-400' : 'text-gray-600'
                             }`}>
                               <Globe className="h-3 w-3 inline mr-1" />
-                              <a href={address.site} target="_blank" rel="noopener noreferrer" className="hover:text-purple-400 truncate">
+                              <a href={address.website} target="_blank" rel="noopener noreferrer" className="hover:text-purple-400 truncate">
                                 Website
                               </a>
                             </div>
@@ -962,8 +973,8 @@ export const Addresses: React.FC = () => {
                         </td>
                         <td className="px-2 sm:px-4 py-4 hidden xl:table-cell w-36">
                           <div className="max-w-full">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getCategoryColor(address.category)} max-w-full`} title={address.category}>
-                              <span className="truncate">{address.category}</span>
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getCategoryColor(address.category_name)} max-w-full`} title={address.category_name}>
+                              <span className="truncate">{address.category_name || 'Other'}</span>
                             </span>
                           </div>
                         </td>
@@ -984,15 +995,15 @@ export const Addresses: React.FC = () => {
                         <td className="px-2 sm:px-3 py-4 whitespace-nowrap text-right text-sm font-medium w-20 sm:w-24">
                           <div className="flex items-center justify-end space-x-1">
                             <button
-                              onClick={() => toggleRowExpansion(address.id)}
+                              onClick={() => toggleRowExpansion(address.encrypted_id)}
                               className={`${
                                 isDark 
                                   ? 'text-gray-400 hover:text-purple-400 hover:bg-dark-800/50' 
                                   : 'text-gray-500 hover:text-purple-500 hover:bg-gray-100'
                               } p-1 rounded transition-colors`}
-                              title={expandedRows.has(address.id) ? 'Collapse details' : 'View details'}
+                              title={expandedRows.has(address.encrypted_id) ? 'Collapse details' : 'View details'}
                             >
-                              {expandedRows.has(address.id) ? (
+                              {expandedRows.has(address.encrypted_id) ? (
                                 <ChevronUp className="h-4 w-4" />
                               ) : (
                                 <Eye className="h-4 w-4" />
@@ -1011,7 +1022,7 @@ export const Addresses: React.FC = () => {
                           </div>
                         </td>
                       </tr>
-                      {expandedRows.has(address.id) && renderExpandedRow(address)}
+                      {expandedRows.has(address.encrypted_id) && renderExpandedRow(address)}
                     </React.Fragment>
                   ))}
                 </tbody>
