@@ -59,15 +59,16 @@ export const Addresses: React.FC = () => {
     });
   };
 
-  const handleAddAddress = () => {
-    alertService.info(
-      'Outscrapper integration is coming soon! We\'re working on improving this feature to provide you with better address fetching capabilities.',
-      {
-        title: 'Coming Soon',
-        duration: 5000
-      }
-    );
-  };
+  // Temporarily disabled - will be re-enabled when Outscrapper integration is ready
+  // const handleAddAddress = () => {
+  //   alertService.info(
+  //     'Outscrapper integration is coming soon! We\'re working on improving this feature to provide you with better address fetching capabilities.',
+  //     {
+  //       title: 'Coming Soon',
+  //       duration: 5000
+  //     }
+  //   );
+  // };
 
   const handleDelete = async (encryptedId: string, businessName: string) => {
     // Show confirmation alert
@@ -658,7 +659,11 @@ export const Addresses: React.FC = () => {
               className="hidden"
             />
           </label>
-          <button onClick={handleAddAddress} className="inline-flex items-center justify-center px-4 py-2 btn-gradient text-sm font-medium rounded-lg text-white">
+          <button 
+            disabled 
+            className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg text-white bg-gray-400 cursor-not-allowed opacity-50"
+            title="Coming Soon - We're working on improving this feature"
+          >
             <User className="h-4 w-4 mr-2" />
             Add Address
           </button>
