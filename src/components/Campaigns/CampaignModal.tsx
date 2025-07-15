@@ -231,7 +231,7 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
       }
       
       // For PDFs, no dimension validation needed
-      resolve({ isValid: true, size: file.size });
+        resolve({ isValid: true, size: file.size });
     });
   }, []);
 
@@ -248,10 +248,10 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
       
       // For PDFs, set a placeholder preview to indicate file is selected
       setImagePreview('pdf-selected'); // Use a placeholder to indicate PDF is selected
-      setSelectedImage(file);
-      setValue('postcardImage', file);
-      setImageValidation(validation);
-      setIsProcessingImage(false);
+        setSelectedImage(file);
+        setValue('postcardImage', file);
+        setImageValidation(validation);
+        setIsProcessingImage(false);
       toast.success('PDF uploaded successfully!');
     } catch {
       alert.error('An error occurred while processing the file');
@@ -677,9 +677,9 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
                       <FileText className={`h-8 w-8 mb-2 ${
                         isDark ? 'text-gray-400' : 'text-gray-500'
                       }`} />
-                      <Upload className={`h-6 w-6 ${
+                    <Upload className={`h-6 w-6 ${
                         isDark ? 'text-purple-400' : 'text-purple-500'
-                      } mb-2`} />
+                    } mb-2`} />
                     </div>
                   )}
                   <span className="text-sm text-purple-400 font-medium">Click to Upload Postcard PDF</span>
@@ -700,8 +700,8 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
                 <div className="space-y-3">
                   <div className="relative inline-block">
                     <div className={`h-32 w-48 rounded-lg border ${
-                      isDark ? 'border-white/10 bg-gray-800' : 'border-gray-200 bg-gray-50'
-                    } flex items-center justify-center shadow-lg`}>
+                        isDark ? 'border-white/10 bg-gray-800' : 'border-gray-200 bg-gray-50'
+                      } flex items-center justify-center shadow-lg`}>
                       <div className="text-center p-2">
                         <FileText className={`h-8 w-8 mx-auto mb-2 ${
                           isDark ? 'text-purple-400' : 'text-purple-500'
@@ -712,11 +712,11 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
                         {selectedImage && (
                           <>
                             <span className={`text-xs ${
-                              isDark ? 'text-gray-400' : 'text-gray-500'
+                            isDark ? 'text-gray-400' : 'text-gray-500'
                             } block truncate max-w-36`} title={selectedImage.name}>
                               {selectedImage.name}
                             </span>
-                            <span className={`text-xs ${
+                          <span className={`text-xs ${
                               isDark ? 'text-gray-400' : 'text-gray-500'
                             } block mt-1`}>
                               {(selectedImage.size / 1024 / 1024).toFixed(2)} MB
@@ -734,7 +734,7 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
                       <X className="h-4 w-4" />
                     </button>
                   </div>
-                  {imageValidation && (                  
+                  {imageValidation && (
                     <div className="space-y-2">
                       <div className={`${
                         isDark 

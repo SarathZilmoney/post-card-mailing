@@ -1,6 +1,8 @@
 import React from 'react';
 import { Mail, Users, TrendingUp, DollarSign } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import { useCampaigns } from '../../hooks/useCampaigns';
+import { useAddresses } from '../../hooks/useAddresses';
 
 interface StatsCardProps {
   title: string;
@@ -52,7 +54,9 @@ const StatsCard: React.FC<StatsCardProps> = ({
                 <div className={`ml-2 flex items-baseline text-sm font-semibold ${
                   changeType === 'positive' 
                     ? isDark ? 'text-green-400' : 'text-green-600'
-                    : isDark ? 'text-red-400' : 'text-red-600'
+                    : changeType === 'negative'
+                      ? isDark ? 'text-red-400' : 'text-red-600'
+                      : isDark ? 'text-gray-400' : 'text-gray-600'
                 }`}>
                   {change}
                 </div>
@@ -66,34 +70,93 @@ const StatsCard: React.FC<StatsCardProps> = ({
 };
 
 export const DashboardStats: React.FC = () => {
+  const { campaigns, loading: campaignsLoading } = useCampaigns();
+  const { total: totalAddresses, loading: addressesLoading } = useAddresses();
+
+  // Calculate real metrics from campaign data
+  const totalCampaigns = campaigns.length;
+  
+  const totalSent = campaigns.reduce((sum, campaign) => sum + campaign.sentCount, 0);
+  const totalDelivered = campaigns.reduce((sum, campaign) => sum + campaign.deliveredCount, 0);
+  const deliveryRate = totalSent > 0 ? ((totalDelivered / totalSent) * 100) : 0;
+  
+  const totalSpend = campaigns.reduce((sum, campaign) => sum + campaign.cost, 0);
+  
+  // Calculate this month's spend (campaigns created in current month)
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+  const monthlySpend = campaigns
+    .filter(campaign => {
+      const campaignDate = new Date(campaign.createdAt);
+      return campaignDate.getMonth() === currentMonth && campaignDate.getFullYear() === currentYear;
+    })
+    .reduce((sum, campaign) => sum + campaign.cost, 0);
+
+  // Calculate active campaigns
+  const activeCampaigns = campaigns.filter(campaign => 
+    campaign.status === 'active' || campaign.status === 'scheduled'
+  ).length;
+
+  // Format numbers
+  const formatNumber = (num: number): string => {
+    if (num >= 1000000) {
+      return (num / 1000000).toFixed(1) + 'M';
+    } else if (num >= 1000) {
+      return (num / 1000).toFixed(1) + 'K';
+    }
+    return num.toString();
+  };
+
+  const formatCurrency = (amount: number): string => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  // Show loading state
+  if (campaignsLoading || addressesLoading) {
+    return (
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        {[...Array(4)].map((_, index) => (
+          <div key={index} className="animate-pulse">
+            <div className="bg-gray-200 dark:bg-gray-700 rounded-2xl h-24"></div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
       <StatsCard
         title="Total Campaigns"
-        value={12}
-        change="+2 this month"
+        value={totalCampaigns}
+        change={activeCampaigns > 0 ? `${activeCampaigns} active` : undefined}
         changeType="positive"
         icon={Mail}
       />
       <StatsCard
         title="Total Addresses"
-        value="2,847"
-        change="+12.5%"
-        changeType="positive"
+        value={formatNumber(totalAddresses)}
+        change={totalAddresses > 0 ? "Ready to use" : "No addresses yet"}
+        changeType={totalAddresses > 0 ? "positive" : undefined}
         icon={Users}
       />
       <StatsCard
         title="Delivery Rate"
-        value="94.2%"
-        change="+2.1%"
-        changeType="positive"
+        value={totalSent > 0 ? `${deliveryRate.toFixed(1)}%` : "0%"}
+        change={totalSent > 0 ? `${formatNumber(totalDelivered)} delivered` : "No sends yet"}
+        changeType={deliveryRate >= 90 ? "positive" : deliveryRate >= 80 ? undefined : "negative"}
         icon={TrendingUp}
       />
       <StatsCard
         title="Monthly Spend"
-        value="$1,247"
-        change="-8.2%"
-        changeType="negative"
+        value={formatCurrency(monthlySpend)}
+        change={totalSpend > monthlySpend ? `${formatCurrency(totalSpend)} total` : "This month"}
+        changeType={monthlySpend > 0 ? "positive" : undefined}
         icon={DollarSign}
       />
     </div>

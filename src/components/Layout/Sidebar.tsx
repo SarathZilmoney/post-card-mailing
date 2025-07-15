@@ -18,7 +18,7 @@ const navigationItems = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Campaigns', href: '/campaigns', icon: Mail },
   { name: 'Addresses', href: '/addresses', icon: Users },
-  { name: 'Outscrapper', href: '/outscrapper', icon: Database },
+  { name: 'Outscrapper', href: '/outscrapper', icon: Database, comingSoon: true },
   { name: 'Analytics', href: '/analytics', icon: BarChart3, comingSoon: true },
 ];
 
