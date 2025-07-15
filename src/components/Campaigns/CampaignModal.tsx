@@ -192,12 +192,11 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
   // --- File Validation Logic ---
   const validateFile = useCallback((file: File): Promise<ImageValidationResult> => {
     return new Promise((resolve) => {
-      // File type - support images and PDFs
-      const isImage = file.type.startsWith('image/');
+      // File type - only support PDFs
       const isPDF = file.type === 'application/pdf';
       
-      if (!isImage && !isPDF) {
-        resolve({ isValid: false, error: 'Please select a valid image file or PDF' });
+      if (!isPDF) {
+        resolve({ isValid: false, error: 'Please select a valid PDF file' });
         return;
       }
       // File size
@@ -214,10 +213,10 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
       }
       // Extension
       const fileName = file.name.toLowerCase();
-      const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff', '.tif', '.pdf'];
+      const allowedExtensions = ['.pdf'];
       const fileExtension = fileName.substring(fileName.lastIndexOf('.'));
       if (!allowedExtensions.includes(fileExtension)) {
-        resolve({ isValid: false, error: `Unsupported file format. Allowed: ${allowedExtensions.map(e => e.toUpperCase().slice(1)).join(', ')}` });
+        resolve({ isValid: false, error: `Unsupported file format. Only PDF files are allowed.` });
         return;
       }
       // Dangerous patterns
@@ -231,30 +230,8 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
         }
       }
       
-      // For PDFs, skip dimension validation
-      if (isPDF) {
-        resolve({ isValid: true, size: file.size });
-        return;
-      }
-      
-      // Dimensions (only for images)
-      const img = new window.Image();
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        img.onload = () => {
-          const width = img.width;
-          const height = img.height;
-          const aspectRatio = width / height;
-          const isPostcardSuitable = aspectRatio >= 1.2 && aspectRatio <= 2.5;
-          const warnings: string[] = [];
-          if (!isPostcardSuitable) warnings.push(`Aspect ratio (${aspectRatio.toFixed(2)}) is outside typical postcard range (1.2-2.5).`);
-          resolve({ isValid: true, width, height, size: file.size, aspectRatio, isPostcardSuitable, warnings });
-        };
-        img.onerror = () => resolve({ isValid: false, error: 'Failed to load image for validation.' });
-        img.src = e.target?.result as string;
-      };
-      reader.onerror = () => resolve({ isValid: false, error: 'Failed to read file.' });
-      reader.readAsDataURL(file);
+      // For PDFs, no dimension validation needed
+      resolve({ isValid: true, size: file.size });
     });
   }, []);
 
@@ -268,20 +245,14 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
         setIsProcessingImage(false);
         return;
       }
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
-        setSelectedImage(file);
-        setValue('postcardImage', file);
-        setImageValidation(validation);
-        setIsProcessingImage(false);
-        toast.success('File uploaded!');
-      };
-      reader.onerror = () => {
-        alert.error('Failed to process file.');
-        setIsProcessingImage(false);
-      };
-      reader.readAsDataURL(file);
+      
+      // For PDFs, set a placeholder preview to indicate file is selected
+      setImagePreview('pdf-selected'); // Use a placeholder to indicate PDF is selected
+      setSelectedImage(file);
+      setValue('postcardImage', file);
+      setImageValidation(validation);
+      setIsProcessingImage(false);
+      toast.success('PDF uploaded successfully!');
     } catch {
       alert.error('An error occurred while processing the file');
       setIsProcessingImage(false);
@@ -307,7 +278,7 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
     setImagePreview(null);
     setImageValidation(null);
     // Note: postcardImage is now required, so we don't unset it from form
-    toast.success('File removed');
+    toast.success('PDF removed');
   };
 
   // --- Form Submission ---
@@ -316,7 +287,7 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
     
     // For create mode, file is required. For edit mode, file is optional
     if (!isEditMode && !selectedImage) {
-      alert.error('Postcard image or PDF is required. Please upload a file before creating the campaign.');
+      alert.error('Postcard PDF is required. Please upload a PDF file before creating the campaign.');
       setIsSubmitting(false);
       return;
     }
@@ -343,7 +314,7 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
       
       // For create mode, validate file. For edit mode, validate only if file is provided
       if (selectedImage && !imageValidation?.isValid) {
-        alert.error('Please upload a valid image or PDF file');
+        alert.error('Please upload a valid PDF file');
         setIsSubmitting(false);
         return;
       }
@@ -680,10 +651,10 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
             <div className="mb-4">
               <label className={`block text-sm font-medium ${
                 isDark ? 'text-gray-200' : 'text-gray-700'
-              } mb-2`}>Postcard Image or PDF {isEditMode ? '' : '*'}</label>
+              } mb-2`}>Postcard PDF {isEditMode ? '' : '*'}</label>
               {!imagePreview ? (
                 <div
-                  className={`flex flex-col items-center justify-center border-2 border-dashed rounded-lg py-4 cursor-pointer transition-all duration-300 ${
+                  className={`flex flex-col items-center justify-center border-2 border-dashed rounded-lg py-8 cursor-pointer transition-all duration-300 ${
                     dragActive 
                       ? 'border-purple-400 bg-purple-500/10' 
                       : isDark
@@ -700,22 +671,27 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
                   onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') handleUploadClick(); }}
                 >
                   {isProcessingImage ? (
-                    <Loader2 className="h-6 w-6 text-purple-400 animate-spin mb-2" />
+                    <Loader2 className="h-8 w-8 text-purple-400 animate-spin mb-3" />
                   ) : (
-                    <Upload className={`h-6 w-6 ${
-                      isDark ? 'text-gray-400' : 'text-gray-500'
-                    } mb-2`} />
+                    <div className="flex flex-col items-center">
+                      <FileText className={`h-8 w-8 mb-2 ${
+                        isDark ? 'text-gray-400' : 'text-gray-500'
+                      }`} />
+                      <Upload className={`h-6 w-6 ${
+                        isDark ? 'text-purple-400' : 'text-purple-500'
+                      } mb-2`} />
+                    </div>
                   )}
-                  <span className="text-sm text-purple-400 font-medium">Click to Upload Postcard File</span>
+                  <span className="text-sm text-purple-400 font-medium">Click to Upload Postcard PDF</span>
                   <span className={`text-xs ${
                     isDark ? 'text-gray-400' : 'text-gray-500'
                   } mt-1 text-center`}>
-                    or drag and drop • JPG, PNG, GIF, WebP, PDF (max 5MB) • {isEditMode ? 'Optional' : 'Required'}
+                    or drag and drop • PDF only (max 5MB) • {isEditMode ? 'Optional' : 'Required'}
                   </span>
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept="image/*,.pdf"
+                    accept=".pdf"
                     className="sr-only"
                     onChange={handleImageChange}
                   />
@@ -723,28 +699,32 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
               ) : (
                 <div className="space-y-3">
                   <div className="relative inline-block">
-                    {selectedImage?.type === 'application/pdf' ? (
-                      <div className={`h-24 w-32 rounded-lg border ${
-                        isDark ? 'border-white/10 bg-gray-800' : 'border-gray-200 bg-gray-50'
-                      } flex items-center justify-center shadow-lg`}>
-                        <div className="text-center">
-                          <FileText className={`h-8 w-8 mx-auto mb-1 ${
-                            isDark ? 'text-gray-400' : 'text-gray-500'
-                          }`} />
-                          <span className={`text-xs ${
-                            isDark ? 'text-gray-400' : 'text-gray-600'
-                          }`}>PDF</span>
-                        </div>
+                    <div className={`h-32 w-48 rounded-lg border ${
+                      isDark ? 'border-white/10 bg-gray-800' : 'border-gray-200 bg-gray-50'
+                    } flex items-center justify-center shadow-lg`}>
+                      <div className="text-center p-2">
+                        <FileText className={`h-8 w-8 mx-auto mb-2 ${
+                          isDark ? 'text-purple-400' : 'text-purple-500'
+                        }`} />
+                        <span className={`text-xs font-medium ${
+                          isDark ? 'text-gray-200' : 'text-gray-700'
+                        } block mb-1`}>PDF Selected</span>
+                        {selectedImage && (
+                          <>
+                            <span className={`text-xs ${
+                              isDark ? 'text-gray-400' : 'text-gray-500'
+                            } block truncate max-w-36`} title={selectedImage.name}>
+                              {selectedImage.name}
+                            </span>
+                            <span className={`text-xs ${
+                              isDark ? 'text-gray-400' : 'text-gray-500'
+                            } block mt-1`}>
+                              {(selectedImage.size / 1024 / 1024).toFixed(2)} MB
+                            </span>
+                          </>
+                        )}
                       </div>
-                    ) : (
-                      <img 
-                        src={imagePreview} 
-                        alt="Preview" 
-                        className={`h-24 w-auto rounded-lg border ${
-                          isDark ? 'border-white/10' : 'border-gray-200'
-                        } object-contain shadow-lg`} 
-                      />
-                    )}
+                    </div>
                     <button 
                       type="button" 
                       onClick={removeImage} 
@@ -754,7 +734,7 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
                       <X className="h-4 w-4" />
                     </button>
                   </div>
-                  {imageValidation && (
+                  {imageValidation && (                  
                     <div className="space-y-2">
                       <div className={`${
                         isDark 
@@ -764,32 +744,8 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
                         <CheckCircle className="h-4 w-4 text-green-400 mr-2" />
                         <span className={`text-xs ${
                           isDark ? 'text-green-400' : 'text-green-800'
-                        }`}>File uploaded successfully</span>
+                        }`}>PDF uploaded successfully</span>
                       </div>
-                      {imageValidation.isPostcardSuitable !== undefined && (
-                        <div className={`${
-                          imageValidation.isPostcardSuitable 
-                            ? isDark 
-                              ? 'bg-green-500/10 border-green-400/20' 
-                              : 'bg-green-50 border-green-200'
-                            : isDark 
-                              ? 'bg-yellow-500/10 border-yellow-400/20' 
-                              : 'bg-yellow-50 border-yellow-200'
-                        } border rounded-lg p-3 flex items-center`}>
-                          <div className={`h-4 w-4 mr-2 flex items-center justify-center ${
-                            imageValidation.isPostcardSuitable ? 'text-green-400' : 'text-yellow-400'
-                          }`}>
-                            {imageValidation.isPostcardSuitable ? '✓' : '⚠'}
-                          </div>
-                          <span className={`text-xs ${
-                            imageValidation.isPostcardSuitable 
-                              ? isDark ? 'text-green-400' : 'text-green-800'
-                              : isDark ? 'text-yellow-400' : 'text-yellow-800'
-                          }`}>
-                            {imageValidation.isPostcardSuitable ? 'Postcard suitable' : 'Non-standard aspect ratio'}
-                          </span>
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>
@@ -832,7 +788,7 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
                 type="submit" 
                 disabled={isSubmitting || (!isEditMode && !selectedImage)} 
                 className="px-6 py-3 rounded-lg text-white bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-all duration-300 shadow-lg hover:shadow-purple-500/25"
-                title={(!isEditMode && !selectedImage) ? 'Please upload a postcard image or PDF first' : ''}
+                title={(!isEditMode && !selectedImage) ? 'Please upload a postcard PDF first' : ''}
               >
                 {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />} 
                 {isEditMode ? 'Update Campaign' : 'Create Campaign'}
