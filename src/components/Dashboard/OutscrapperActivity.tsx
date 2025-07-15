@@ -1,5 +1,4 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { Database, Target, Search } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -7,9 +6,32 @@ export const OutscrapperActivity: React.FC = () => {
   const { isDark } = useTheme();
 
   return (
-    <div className={`${
+    <div className={`relative ${
       isDark ? 'glass-dark' : 'glass bg-white/70 border-gray-200/50'
-    } rounded-2xl hover:border-purple-500/30 transition-all duration-300 animate-slideUp`}>
+    } rounded-2xl hover:border-purple-500/30 transition-all duration-300 animate-slideUp overflow-hidden`}>
+      {/* Coming Soon Overlay */}
+      <div className={`absolute inset-0 ${
+        isDark ? 'bg-gray-900/80' : 'bg-white/90'
+      } backdrop-blur-sm rounded-2xl z-10 flex items-center justify-center`}>
+        <div className="text-center p-4">
+          <div className={`inline-flex items-center px-4 py-2 rounded-full ${
+            isDark 
+              ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-400/30' 
+              : 'bg-gradient-to-r from-amber-100 to-orange-100 border border-amber-300'
+          } mb-3`}>
+            <span className={`text-sm font-medium ${
+              isDark ? 'text-amber-300' : 'text-amber-700'
+            }`}>Coming Soon</span>
+          </div>
+          <p className={`text-sm ${
+            isDark ? 'text-gray-300' : 'text-gray-600'
+          }`}>
+            We're working on improving this feature
+          </p>
+        </div>
+      </div>
+      
+      {/* Original Content (preserved but dimmed) */}
       <div className={`px-6 py-4 border-b ${
         isDark ? 'border-dark-600' : 'border-gray-200'
       }`}>
@@ -22,12 +44,9 @@ export const OutscrapperActivity: React.FC = () => {
               isDark ? 'text-white' : 'text-gray-900'
             }`}>Outscrapper Integration</h3>
           </div>
-          <Link
-            to="/outscrapper"
-            className="text-sm font-medium text-purple-400 hover:text-purple-300 transition-colors"
-          >
+          <span className="text-sm font-medium text-purple-400/50 cursor-not-allowed">
             Get started
-          </Link>
+          </span>
         </div>
       </div>
       
@@ -51,15 +70,15 @@ export const OutscrapperActivity: React.FC = () => {
         } mb-4`}>
           Use Outscrapper to find targeted business addresses for your campaigns.
         </p>
-        <Link
-          to="/outscrapper"
+        <button
+          disabled
           className={`inline-flex items-center px-4 py-2 ${
-            isDark ? 'btn-gradient' : 'bg-purple-600 hover:bg-purple-700'
-          } text-sm font-medium rounded-lg text-white transition-all duration-200`}
+            isDark ? 'bg-gray-600/50' : 'bg-gray-400/50'
+          } text-sm font-medium rounded-lg text-white/50 cursor-not-allowed transition-all duration-200`}
         >
           <Search className="mr-2 h-4 w-4" />
           Start Fetching
-        </Link>
+        </button>
       </div>
     </div>
   );

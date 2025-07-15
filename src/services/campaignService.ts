@@ -168,16 +168,22 @@ class CampaignService {
         payload.append('start_date', startDate);
         payload.append('category', category || ''); // Send category ID instead of name
         
+        // Add address count
+        const targetAddressCount = campaignData.get('targetAddressCount') as string;
+        if (targetAddressCount) {
+          payload.append('address_count', targetAddressCount);
+        }
+        
         // Add zip code if provided
         const zipCode = campaignData.get('zipCode') as string;
         if (zipCode?.trim()) {
           payload.append('zip_code', zipCode.trim());
         }
         
-        // Postcard image is now required
+        // Postcard PDF is now required
         const file = campaignData.get('postcardImage') as File;
         if (!file || file.size === 0) {
-          throw new Error('Postcard image is required');
+          throw new Error('Postcard PDF is required');
         }
         
         // Validate file
@@ -194,6 +200,7 @@ class CampaignService {
             description: description,
             start_date: startDate,
             category_encrypted_id: category,
+            address_count: targetAddressCount,
             zipCode: zipCode,
             hasFile: !!file
           });
@@ -201,7 +208,7 @@ class CampaignService {
         
       } else {
         // Handle object data (convert to FormData) - Note: This path doesn't support file uploads
-        throw new Error('Postcard image is required. Please use the campaign creation form.');
+        throw new Error('Postcard PDF is required. Please use the campaign creation form.');
       }
       
       // Make API call to the correct endpoint
@@ -261,6 +268,12 @@ class CampaignService {
       payload.append('description', description.trim());
       payload.append('start_date', startDate);
       payload.append('category', category || ''); // Send category ID instead of name
+      
+      // Add address count
+      const targetAddressCount = campaignData.get('targetAddressCount') as string;
+      if (targetAddressCount) {
+        payload.append('address_count', targetAddressCount);
+      }
       
       // Add zip code if provided
       const zipCode = campaignData.get('zipCode') as string;

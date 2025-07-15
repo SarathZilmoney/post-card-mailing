@@ -60,7 +60,13 @@ export const Addresses: React.FC = () => {
   };
 
   const handleAddAddress = () => {
-    navigate('/outscrapper');
+    alertService.info(
+      'Outscrapper integration is coming soon! We\'re working on improving this feature to provide you with better address fetching capabilities.',
+      {
+        title: 'Coming Soon',
+        duration: 5000
+      }
+    );
   };
 
   const handleDelete = async (encryptedId: string, businessName: string) => {
