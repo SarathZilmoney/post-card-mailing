@@ -385,18 +385,20 @@ export const Campaigns: React.FC = () => {
                   <Eye className="h-4 w-4" />
                 </button>
                 
-                {/* Edit Button */}
-                <button
-                  onClick={() => handleEditCampaign(campaign)}
-                  className={`p-1 ${
-                    isDark 
-                      ? 'text-gray-400 hover:text-blue-400 hover:bg-dark-800/50' 
-                      : 'text-light-600 hover:text-blue-600 hover:bg-light-200/60'
-                  } rounded transition-colors`}
-                  title="Edit Campaign"
-                >
-                  <Edit className="h-4 w-4" />
-                </button>
+                {/* Edit Button - Only for pending campaigns */}
+                {campaign.status === 'pending' && (
+                  <button
+                    onClick={() => handleEditCampaign(campaign)}
+                    className={`p-1 ${
+                      isDark 
+                        ? 'text-gray-400 hover:text-blue-400 hover:bg-dark-800/50' 
+                        : 'text-light-600 hover:text-blue-600 hover:bg-light-200/60'
+                    } rounded transition-colors`}
+                    title="Edit Campaign"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </button>
+                )}
                 
                 {/* Delete Button */}
                 <button

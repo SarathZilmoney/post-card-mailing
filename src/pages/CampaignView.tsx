@@ -42,13 +42,18 @@ export const CampaignView: React.FC = () => {
   
   // Pagination state for addresses
   const [currentPage, setCurrentPage] = useState(1);
-  const addressesPerPage = 10;
+  const [addressesPerPage, setAddressesPerPage] = useState(10);
 
   useEffect(() => {
     if (encryptedId) {
       fetchCampaign();
     }
   }, [encryptedId]);
+
+  // Reset to first page when per-page changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [addressesPerPage]);
 
   const fetchCampaign = async () => {
     try {
@@ -68,7 +73,7 @@ export const CampaignView: React.FC = () => {
     
     try {
       setIsRunning(true);
-      const response = await runCampaign(campaign.id.toString());
+      const response = await runCampaign(encryptedId!);
       
       alert.success(response.message || 'Campaign started successfully!', {
         title: 'Success',
@@ -99,7 +104,7 @@ export const CampaignView: React.FC = () => {
       onConfirm: async () => {
         try {
           setIsDeleting(true);
-          const response = await deleteCampaign(campaign.id.toString());
+          const response = await deleteCampaign(encryptedId!);
           
           const successMessage = response.message || 'Campaign deleted successfully!';
           
@@ -247,7 +252,7 @@ export const CampaignView: React.FC = () => {
     return (
       <div className="flex items-center justify-between mt-6">
         <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-          Showing {startIndex + 1} to {Math.min(endIndex, totalAddresses)} of {totalAddresses} addresses
+          Showing {startIndex + 1} to {Math.min(endIndex, totalAddresses)} of {totalAddresses.toLocaleString()} addresses
         </div>
         
         <div className="flex items-center space-x-2">
@@ -580,10 +585,41 @@ export const CampaignView: React.FC = () => {
           <div className={`${
             isDark ? 'glass-dark' : 'glass-light'
           } rounded-2xl p-6`}>
-            <h3 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              Addresses ({campaign.addresses.length})
-            </h3>
-            <div className="space-y-3">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                Addresses ({campaign.addresses.length})
+              </h3>
+              
+              {/* Per Page Selector */}
+              <div className="flex items-center space-x-2">
+                <label className={`text-sm font-medium ${
+                  isDark ? 'text-gray-300' : 'text-gray-700'
+                }`}>
+                  Show:
+                </label>
+                <select
+                  value={addressesPerPage}
+                  onChange={(e) => setAddressesPerPage(Number(e.target.value))}
+                  className={`px-3 py-1 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 ${
+                    isDark 
+                      ? 'bg-dark-800/50 border-dark-600 text-white' 
+                      : 'bg-white border-gray-300 text-gray-900'
+                  }`}
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                  <option value={500}>500</option>
+                </select>
+                <span className={`text-sm ${
+                  isDark ? 'text-gray-400' : 'text-gray-600'
+                }`}>
+                  per page
+                </span>
+              </div>
+            </div>
+            <div className="space-y-3 max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 dark:scrollbar-thumb-gray-600 dark:scrollbar-track-gray-800">
               {currentAddresses.map((campaignAddress) => (
                 <div
                   key={campaignAddress.id}
@@ -707,18 +743,6 @@ export const CampaignView: React.FC = () => {
                         </p>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <a
-                          href={attachment.public_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={`p-2 rounded-lg ${
-                            isDark 
-                              ? 'hover:bg-dark-700 text-gray-300 hover:text-white' 
-                              : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
-                          } transition-colors`}
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                        </a>
                         <button
                           onClick={() => window.open(attachment.public_url, '_blank')}
                           className={`p-2 rounded-lg ${
@@ -726,8 +750,9 @@ export const CampaignView: React.FC = () => {
                               ? 'hover:bg-dark-700 text-gray-300 hover:text-white' 
                               : 'hover:bg-gray-100 text-gray-600 hover:text-gray-900'
                           } transition-colors`}
+                          title="Open attachment"
                         >
-                          <Download className="h-4 w-4" />
+                          <ExternalLink className="h-4 w-4" />
                         </button>
                       </div>
                     </div>

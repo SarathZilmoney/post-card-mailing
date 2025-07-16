@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Mail, Users, TrendingUp } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useCampaigns } from '../../hooks/useCampaigns';
-import { useAddresses } from '../../hooks/useAddresses';
+import { summaryService, SummaryData } from '../../services/summaryService';
 
 interface StatsCardProps {
   title: string;
@@ -71,7 +71,27 @@ const StatsCard: React.FC<StatsCardProps> = ({
 
 export const DashboardStats: React.FC = () => {
   const { campaigns, loading: campaignsLoading } = useCampaigns();
-  const { total: totalAddresses, loading: addressesLoading } = useAddresses();
+  const [summary, setSummary] = useState<SummaryData | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(true);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+
+  // Fetch summary data
+  useEffect(() => {
+    const fetchSummary = async () => {
+      try {
+        setSummaryLoading(true);
+        setSummaryError(null);
+        const data = await summaryService.getSummary();
+        setSummary(data);
+      } catch (error) {
+        setSummaryError(error instanceof Error ? error.message : 'Failed to fetch summary');
+      } finally {
+        setSummaryLoading(false);
+      }
+    };
+
+    fetchSummary();
+  }, []);
 
   // Calculate real metrics from campaign data
   const totalCampaigns = campaigns.length;
@@ -86,17 +106,15 @@ export const DashboardStats: React.FC = () => {
   ).length;
 
   // Format numbers
-  const formatNumber = (num: number): string => {
-    if (num >= 1000000) {
-      return (num / 1000000).toFixed(1) + 'M';
-    } else if (num >= 1000) {
-      return (num / 1000).toFixed(1) + 'K';
+  const formatNumber = (num: number | undefined | null): string => {
+    if (num === undefined || num === null) {
+      return '0';
     }
-    return num.toString();
+    return num.toLocaleString();
   };
 
   // Show loading state
-  if (campaignsLoading || addressesLoading) {
+  if (campaignsLoading || summaryLoading) {
     return (
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {[...Array(3)].map((_, index) => (
@@ -106,6 +124,11 @@ export const DashboardStats: React.FC = () => {
         ))}
       </div>
     );
+  }
+
+  // Show error state for summary
+  if (summaryError) {
+    console.warn('Summary fetch error:', summaryError);
   }
 
   return (
@@ -119,9 +142,9 @@ export const DashboardStats: React.FC = () => {
       />
       <StatsCard
         title="Total Addresses"
-        value={formatNumber(totalAddresses)}
-        change={totalAddresses > 0 ? "Ready to use" : "No addresses yet"}
-        changeType={totalAddresses > 0 ? "positive" : undefined}
+        value={formatNumber(summary?.total_addresses)}
+        change={summary?.total_addresses && summary.total_addresses > 0 ? "Ready to use" : "No addresses yet"}
+        changeType={summary?.total_addresses && summary.total_addresses > 0 ? "positive" : undefined}
         icon={Users}
       />
       <StatsCard
