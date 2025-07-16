@@ -4,19 +4,29 @@ import { httpService } from './httpService';
 class AddressService {
   async getAddresses(page = 1, filters?: Record<string, unknown>): Promise<{ addresses: Address[]; total: number; currentPage: number; totalPages: number }> {
     try {
-      // Request server-side pagination with 10 results per page
+      // Build query parameters
       const queryParams = new URLSearchParams({
         page: page.toString(),
-        per_page: '10',
-        ...filters
+        per_page: '10'
       });
       
+      // Add search parameter if provided
+      if (filters?.name) {
+        queryParams.append('name', filters.name as string);
+      }
+      
+      // Add category filter if provided
+      if (filters?.category && filters.category !== 'all') {
+        queryParams.append('category', filters.category as string);
+      }
+      
       const queryString = queryParams.toString();
-      const endpoint = queryString ? `/sua/postal-cards/list-postal-addresses?${queryString}` : '/sua/postal-cards/list-postal-addresses';
+      const endpoint = `/sua/postal-cards/list-postal-addresses?${queryString}`;
       
       // Debug logging
       if (import.meta.env.DEV) {
         console.log('API Request:', endpoint);
+        console.log('Filters:', filters);
       }
       
       const response = await httpService.get(endpoint) as AddressResponse;
@@ -47,7 +57,8 @@ class AddressService {
             hasNextPage,
             knownTotal,
             totalPages,
-            currentPage: page
+            currentPage: page,
+            filters
           });
         }
         

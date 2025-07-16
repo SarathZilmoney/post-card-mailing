@@ -3,29 +3,28 @@ import { BarChart } from 'recharts';
 import { TrendingUp, DollarSign, Mail, Users, Target } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
-// Data for future chart implementations
-// const monthlyData = [
-//   { month: 'Jan', campaigns: 4, sent: 1200, delivered: 1140, cost: 1800 },
-//   { month: 'Feb', campaigns: 6, sent: 1800, delivered: 1710, cost: 2700 },
-//   { month: 'Mar', campaigns: 3, sent: 900, delivered: 855, cost: 1350 },
-//   { month: 'Apr', campaigns: 8, sent: 2400, delivered: 2280, cost: 3600 },
-//   { month: 'May', campaigns: 5, sent: 1500, delivered: 1425, cost: 2250 },
-//   { month: 'Jun', campaigns: 7, sent: 2100, delivered: 1995, cost: 3150 },
-// ];
+// Dummy data - replace with real data from your API
+const monthlyData = [
+  { month: 'Jan', sent: 2400, delivered: 2280 },
+  { month: 'Feb', sent: 1398, delivered: 1320 },
+  { month: 'Mar', sent: 9800, delivered: 9310 },
+  { month: 'Apr', sent: 3908, delivered: 3712 },
+  { month: 'May', sent: 4800, delivered: 4560 },
+  { month: 'Jun', sent: 3800, delivered: 3610 },
+];
 
-// const sourceData = [
-//   { name: 'Outscrapper', value: 1247, color: '#8b5cf6' },
-//   { name: 'CSV Import', value: 843, color: '#10B981' },
-//   { name: 'Manual Entry', value: 456, color: '#ec4899' },
-// ];
+const dummyStats = [
+  { label: 'Total Campaigns', value: '24', change: '+12%' },
+  { label: 'Total Sent', value: '26.1K', change: '+8%' },
+  { label: 'Delivery Rate', value: '95.2%', change: '+2.1%' },
+];
 
-const deliveryData = [
-  { month: 'Jan', sent: 2400, delivered: 2280, cost: 1800 },
-  { month: 'Feb', sent: 1398, delivered: 1320, cost: 1200 },
-  { month: 'Mar', sent: 9800, delivered: 9310, cost: 7200 },
-  { month: 'Apr', sent: 3908, delivered: 3712, cost: 2900 },
-  { month: 'May', sent: 4800, delivered: 4560, cost: 3600 },
-  { month: 'Jun', sent: 3800, delivered: 3610, cost: 2850 },
+const campaignData = [
+  { name: 'Summer Sale', sent: 1200, delivered: 1140, deliveryRate: 95 },
+  { name: 'Back to School', sent: 800, delivered: 760, deliveryRate: 95 },
+  { name: 'Holiday Special', sent: 1500, delivered: 1425, deliveryRate: 95 },
+  { name: 'Spring Collection', sent: 600, delivered: 570, deliveryRate: 95 },
+  { name: 'Winter Clearance', sent: 900, delivered: 855, deliveryRate: 95 },
 ];
 
 export const Analytics: React.FC = () => {
@@ -93,22 +92,7 @@ export const Analytics: React.FC = () => {
           </dd>
         </div>
 
-        <div className={`${
-          isDark ? 'glass-dark' : 'glass bg-white/70 border-gray-200/50'
-        } rounded-2xl p-4 sm:p-6 hover:border-purple-500/30 transition-all duration-300 group animate-slideUp`}>
-          <dt className="text-sm font-medium text-gray-400 truncate">Avg Cost/Piece</dt>
-          <dd className="mt-1 flex items-baseline">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-pink-500/20 to-pink-600/20 rounded-xl flex items-center justify-center group-hover:from-pink-500/30 group-hover:to-pink-600/30 transition-all duration-300">
-              <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-pink-400" />
-            </div>
-            <div className="ml-3 sm:ml-4">
-              <dd className={`text-xl sm:text-2xl font-semibold ${
-                isDark ? 'text-white' : 'text-gray-900'
-              }`}>$1.50</dd>
-              <dd className="text-sm font-medium text-green-400">-5.4%</dd>
-            </div>
-          </dd>
-        </div>
+
       </div>
 
       {/* Charts Grid */}
@@ -215,15 +199,13 @@ export const Analytics: React.FC = () => {
                 <th className={`px-4 sm:px-6 py-3 text-left text-xs font-medium ${
                   isDark ? 'text-gray-300' : 'text-gray-500'
                 } uppercase tracking-wider`}>Rate</th>
-                <th className={`px-4 sm:px-6 py-3 text-left text-xs font-medium ${
-                  isDark ? 'text-gray-300' : 'text-gray-500'
-                } uppercase tracking-wider`}>Cost</th>
+
               </tr>
             </thead>
             <tbody className={`divide-y ${
               isDark ? 'divide-dark-600' : 'divide-gray-200'
             }`}>
-              {deliveryData.map((row, index) => (
+              {monthlyData.map((row, index) => (
                 <tr key={index} className={`${
                   isDark ? 'hover:bg-dark-800/30' : 'hover:bg-gray-50'
                 } transition-colors`}>
@@ -247,11 +229,7 @@ export const Analytics: React.FC = () => {
                   }`}>
                     {((row.delivered / row.sent) * 100).toFixed(1)}%
                   </td>
-                  <td className={`px-4 sm:px-6 py-4 whitespace-nowrap text-sm ${
-                    isDark ? 'text-gray-300' : 'text-gray-700'
-                  }`}>
-                    ${row.cost.toLocaleString()}
-                  </td>
+
                 </tr>
               ))}
             </tbody>

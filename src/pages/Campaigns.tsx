@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Search, Filter, Eye, Edit, Trash2, MoreHorizontal, Mail, PlayCircle, Square, RotateCcw, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Search, Filter, Edit, Trash2, Mail, PlayCircle, Square, RotateCcw, CheckCircle, ChevronDown, ChevronUp, Eye } from 'lucide-react';
 import { useCampaigns } from '../hooks/useCampaigns';
 import { useTheme } from '../context/ThemeContext';
 import { useAlert } from '../context/AlertContext';
@@ -8,11 +8,14 @@ import { formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
 import { CampaignModal } from '../components/Campaigns/CampaignModal';
 import { RunTrackingDisplay } from '../components/Campaigns/RunTrackingDisplay';
+import { formatRelativeTime, debugDateInfo } from '../utils/dateUtils';
+import { useNavigate } from 'react-router-dom';
 
 export const Campaigns: React.FC = () => {
   const { campaigns, loading, deleteCampaign, updateCampaign, runCampaign, stopCampaign, refetch, getRunHistory } = useCampaigns();
   const { isDark } = useTheme();
   const alert = useAlert();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [modalOpen, setModalOpen] = useState(false);
@@ -143,21 +146,21 @@ export const Campaigns: React.FC = () => {
     });
   };
 
-  const handleStopCampaign = async (id: string, campaignName: string) => {
+  const handleStopCampaign = async (encryptedId: string, campaignName: string) => {
     alert.showAlert({
       type: 'warning',
       title: 'Stop Campaign',
       message: `Are you sure you want to stop "${campaignName}"? This will pause the campaign.`,
       confirmText: 'Stop Campaign',
       cancelText: 'Cancel',
-      onConfirm: async () => {
-        try {
-          await stopCampaign(id);
-          toast.success('Campaign stopped successfully!');
-        } catch (error) {
-          toast.error('Failed to stop campaign');
-        }
-      },
+              onConfirm: async () => {
+          try {
+            await stopCampaign(encryptedId);
+            toast.success('Campaign stopped successfully!');
+          } catch (error) {
+            toast.error('Failed to stop campaign');
+          }
+        },
       onCancel: () => {
         // Do nothing on cancel
       }
@@ -167,6 +170,10 @@ export const Campaigns: React.FC = () => {
   const handleEditCampaign = (campaign: Campaign) => {
     setEditingCampaign(campaign);
     setModalOpen(true);
+  };
+
+  const handleViewCampaign = (encryptedId: string) => {
+    navigate(`/campaigns/${encryptedId}`);
   };
 
 
@@ -190,32 +197,27 @@ export const Campaigns: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     const colors = {
-      active: isDark 
+      pending: isDark 
+        ? 'bg-gray-500/20 text-gray-300 border-gray-400/30' 
+        : 'bg-gray-100/80 text-gray-700 border-gray-200',
+      in_progress: isDark 
         ? 'bg-blue-500/20 text-blue-300 border-blue-400/30' 
         : 'bg-blue-100/80 text-blue-700 border-blue-200',
       completed: isDark 
         ? 'bg-green-500/20 text-green-300 border-green-400/30' 
         : 'bg-green-100/80 text-green-700 border-green-200',
-      draft: isDark 
-        ? 'bg-gray-500/20 text-gray-300 border-gray-400/30' 
-        : 'bg-light-200/80 text-light-700 border-light-300',
-      paused: isDark 
-        ? 'bg-yellow-500/20 text-yellow-300 border-yellow-400/30' 
-        : 'bg-yellow-100/80 text-yellow-700 border-yellow-200',
     } as const;
-    return colors[status as keyof typeof colors] || colors.draft;
+    return colors[status as keyof typeof colors] || colors.pending;
   };
 
   const getStatusText = (status: string) => {
     switch (status) {
+      case 'pending':
+        return 'PENDING';
+      case 'in_progress':
+        return 'IN PROGRESS';
       case 'completed':
         return 'COMPLETE';
-      case 'active':
-        return 'RUNNING';
-      case 'draft':
-        return 'DRAFT';
-      case 'paused':
-        return 'PAUSED';
       default:
         return status.toUpperCase();
     }
@@ -314,9 +316,8 @@ export const Campaigns: React.FC = () => {
             } rounded-lg px-3 sm:px-4 py-3 focus:ring-2 focus:ring-brand-primary-500 focus:border-brand-primary-500 transition-all duration-200`}
           >
             <option value="all">All Status</option>
-            <option value="draft">Draft</option>
-            <option value="active">Active</option>
-            <option value="paused">Paused</option>
+            <option value="pending">Pending</option>
+            <option value="in_progress">In Progress</option>
             <option value="completed">Completed</option>
           </select>
         </div>
@@ -371,14 +372,15 @@ export const Campaigns: React.FC = () => {
                 </span>
               </div>
               <div className="flex items-center space-x-1 sm:space-x-2">
-                {/* View Details Button */}
+                {/* View Button */}
                 <button
+                  onClick={() => handleViewCampaign(campaign.encrypted_id)}
                   className={`p-1 ${
                     isDark 
                       ? 'text-gray-400 hover:text-purple-400 hover:bg-dark-800/50' 
-                      : 'text-light-600 hover:text-brand-primary-600 hover:bg-light-200/60'
+                      : 'text-light-600 hover:text-purple-600 hover:bg-light-200/60'
                   } rounded transition-colors`}
-                  title="View Details"
+                  title="View Campaign"
                 >
                   <Eye className="h-4 w-4" />
                 </button>
@@ -398,7 +400,7 @@ export const Campaigns: React.FC = () => {
                 
                 {/* Delete Button */}
                 <button
-                                                onClick={() => handleDelete(campaign.encrypted_id, campaign.name)}
+                  onClick={() => handleDelete(campaign.encrypted_id, campaign.name)}
                   className={`p-1 ${
                     isDark 
                       ? 'text-gray-400 hover:text-red-400 hover:bg-dark-800/50' 
@@ -408,25 +410,19 @@ export const Campaigns: React.FC = () => {
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
-                
-                {/* More Options Button - Hidden on mobile */}
-                <button
-                  className={`hidden sm:block p-1 ${
-                    isDark 
-                      ? 'text-gray-400 hover:text-purple-400 hover:bg-dark-800/50' 
-                      : 'text-light-600 hover:text-brand-primary-600 hover:bg-light-200/60'
-                  } rounded transition-colors`}
-                  title="More Options"
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </button>
               </div>
             </div>
 
             <div className="mb-4">
-              <h3 className={`text-lg font-semibold ${
-                isDark ? 'text-white' : 'text-gray-900'
-              } mb-2 line-clamp-1`}>
+              <h3 
+                className={`text-lg font-semibold ${
+                  isDark ? 'text-white' : 'text-gray-900'
+                } mb-2 line-clamp-1 cursor-pointer hover:underline transition-colors ${
+                  isDark ? 'hover:text-purple-300' : 'hover:text-purple-600'
+                }`}
+                onClick={() => handleViewCampaign(campaign.encrypted_id)}
+                title="Click to view campaign details"
+              >
                 {campaign.name}
               </h3>
               <p className={`text-sm ${
@@ -437,11 +433,11 @@ export const Campaigns: React.FC = () => {
               <p className={`text-xs ${
                 isDark ? 'text-gray-500' : 'text-gray-500'
               }`}>
-                {formatDistanceToNow(new Date(campaign.createdAt), { addSuffix: true })}
+                {formatRelativeTime(campaign.createdAt)}
               </p>
             </div>
 
-            <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center mb-4">
+            <div className="grid grid-cols-2 gap-2 sm:gap-4 text-center mb-4">
               <div>
                 <div className={`text-base sm:text-lg font-semibold ${
                   isDark ? 'text-white' : 'text-gray-900'
@@ -466,18 +462,6 @@ export const Campaigns: React.FC = () => {
                   Sent
                 </div>
               </div>
-              <div>
-                <div className={`text-base sm:text-lg font-semibold ${
-                  isDark ? 'text-white' : 'text-gray-900'
-                }`}>
-                  ${campaign.cost || 0}
-                </div>
-                <div className={`text-xs ${
-                  isDark ? 'text-gray-400' : 'text-gray-600'
-                }`}>
-                  Cost
-                </div>
-              </div>
             </div>
 
             {/* Run Progress Display */}
@@ -491,7 +475,7 @@ export const Campaigns: React.FC = () => {
 
             {/* Action Buttons */}
             <div className="flex gap-2">
-              {(campaign.status === 'draft' || campaign.status === 'paused' || (campaign.canRunAgain && campaign.nextRunAvailable)) && campaign.currentRun < campaign.maxRuns ? (
+              {(campaign.status === 'pending' || (campaign.canRunAgain && campaign.nextRunAvailable)) && campaign.currentRun < campaign.maxRuns ? (
                 (() => {
                   // Check if start date is in the future to determine button type
                   // Future date = "Start Early" (blue), Current/Past date = "Run Campaign" (green)
@@ -529,9 +513,9 @@ export const Campaigns: React.FC = () => {
                     </button>
                   );
                 })()
-              ) : campaign.status === 'active' ? (
+              ) : campaign.status === 'in_progress' ? (
                 <button
-                  onClick={() => handleStopCampaign(campaign.id, campaign.name)}
+                  onClick={() => handleStopCampaign(campaign.encrypted_id, campaign.name)}
                   className={`flex-1 flex items-center justify-center px-3 sm:px-4 py-2.5 rounded-lg font-medium transition-all duration-200 shadow-sm ${
                     isDark
                       ? 'bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white shadow-red-500/20 hover:shadow-red-500/30'
@@ -616,29 +600,17 @@ export const Campaigns: React.FC = () => {
                     </span>
                   </div>
                   <div className="flex items-center space-x-1 sm:space-x-2">
-                    {/* View Details Button */}
+                    {/* View Button */}
                     <button
+                      onClick={() => handleViewCampaign(campaign.encrypted_id)}
                       className={`p-1 ${
                         isDark 
                           ? 'text-gray-400 hover:text-purple-400 hover:bg-dark-800/50' 
-                          : 'text-light-600 hover:text-brand-primary-600 hover:bg-light-200/60'
+                          : 'text-light-600 hover:text-purple-600 hover:bg-light-200/60'
                       } rounded transition-colors`}
-                      title="View Details"
+                      title="View Campaign"
                     >
                       <Eye className="h-4 w-4" />
-                    </button>
-                    
-                    {/* Edit Button */}
-                    <button
-                      onClick={() => handleEditCampaign(campaign)}
-                      className={`p-1 ${
-                        isDark 
-                          ? 'text-gray-400 hover:text-blue-400 hover:bg-dark-800/50' 
-                          : 'text-light-600 hover:text-blue-600 hover:bg-light-200/60'
-                      } rounded transition-colors`}
-                      title="Edit Campaign"
-                    >
-                      <Edit className="h-4 w-4" />
                     </button>
                     
                     {/* Delete Button */}
@@ -653,25 +625,19 @@ export const Campaigns: React.FC = () => {
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
-                    
-                    {/* More Options Button - Hidden on mobile */}
-                    <button
-                      className={`hidden sm:block p-1 ${
-                        isDark 
-                          ? 'text-gray-400 hover:text-purple-400 hover:bg-dark-800/50' 
-                          : 'text-light-600 hover:text-brand-primary-600 hover:bg-light-200/60'
-                      } rounded transition-colors`}
-                      title="More Options"
-                    >
-                      <MoreHorizontal className="h-4 w-4" />
-                    </button>
                   </div>
                 </div>
 
                 <div className="mb-4">
-                  <h3 className={`text-lg font-semibold ${
-                    isDark ? 'text-white' : 'text-gray-900'
-                  } mb-2 line-clamp-1`}>
+                  <h3 
+                    className={`text-lg font-semibold ${
+                      isDark ? 'text-white' : 'text-gray-900'
+                    } mb-2 line-clamp-1 cursor-pointer hover:underline transition-colors ${
+                      isDark ? 'hover:text-purple-300' : 'hover:text-purple-600'
+                    }`}
+                    onClick={() => handleViewCampaign(campaign.encrypted_id)}
+                    title="Click to view campaign details"
+                  >
                     {campaign.name}
                   </h3>
                   <p className={`text-sm ${
@@ -682,11 +648,11 @@ export const Campaigns: React.FC = () => {
                   <p className={`text-xs ${
                     isDark ? 'text-gray-500' : 'text-gray-500'
                   }`}>
-                    {formatDistanceToNow(new Date(campaign.createdAt), { addSuffix: true })}
+                    {formatRelativeTime(campaign.createdAt)}
                   </p>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4 text-center mb-4">
+                <div className="grid grid-cols-2 gap-4 text-center mb-4">
                   <div>
                     <div className={`text-base sm:text-lg font-semibold ${
                       isDark ? 'text-white' : 'text-gray-900'
@@ -709,18 +675,6 @@ export const Campaigns: React.FC = () => {
                       isDark ? 'text-gray-400' : 'text-gray-600'
                     }`}>
                       Sent
-                    </div>
-                  </div>
-                  <div>
-                    <div className={`text-base sm:text-lg font-semibold ${
-                      isDark ? 'text-white' : 'text-gray-900'
-                    }`}>
-                      ${campaign.cost || 0}
-                    </div>
-                    <div className={`text-xs ${
-                      isDark ? 'text-gray-400' : 'text-gray-600'
-                    }`}>
-                      Cost
                     </div>
                   </div>
                 </div>

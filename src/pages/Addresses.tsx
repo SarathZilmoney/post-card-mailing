@@ -8,17 +8,31 @@ import toast from 'react-hot-toast';
 import { alertService } from '../services/alertService';
 import { categoryService } from '../services/categoryService';
 import { AddressCategory } from '../types';
+import { formatRelativeTime, debugDateInfo } from '../utils/dateUtils';
 
 export const Addresses: React.FC = () => {
-  const { addresses, total, currentPage, totalPages, loading, error, goToPage, goToNextPage, goToPreviousPage, deleteAddress, importAddresses, refetch } = useAddresses();
+  const { 
+    addresses, 
+    total, 
+    currentPage, 
+    totalPages, 
+    loading, 
+    error, 
+    searchTerm,
+    setSearchTerm,
+    categoryFilter,
+    setCategoryFilter,
+    goToPage, 
+    goToNextPage, 
+    goToPreviousPage, 
+    deleteAddress, 
+    importAddresses, 
+    refetch 
+  } = useAddresses();
   const { isDark } = useTheme();
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
-  const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const [categories, setCategories] = useState<AddressCategory[]>([]);
 
   // Close dropdowns when clicking outside
@@ -27,25 +41,12 @@ export const Addresses: React.FC = () => {
       const target = event.target as HTMLElement;
       if (!target.closest('.filter-dropdown')) {
         setCategoryDropdownOpen(false);
-        setStatusDropdownOpen(false);
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-  
-  const filteredAddresses = addresses?.filter(address => {
-    const matchesSearch = 
-      (address.name && address.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (address.full_address && address.full_address.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (address.phone && address.phone.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    const matchesStatus = statusFilter === 'all' || (address.business_status && address.business_status.toLowerCase() === statusFilter.toLowerCase());
-    const matchesCategory = categoryFilter === 'all' || (address.category_name && address.category_name.toLowerCase() === categoryFilter.toLowerCase());
-    
-    return matchesSearch && matchesStatus && matchesCategory;
-  }) || [];
 
   const toggleRowExpansion = (encryptedId: string) => {
     setExpandedRows(prev => {
@@ -178,31 +179,7 @@ export const Addresses: React.FC = () => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    if (!status) {
-      return isDark 
-        ? 'bg-gray-500/20 text-gray-300 border-gray-400/30' 
-        : 'bg-gray-100 text-gray-700 border-gray-300';
-    }
-    switch (status.toLowerCase()) {
-      case 'operational':
-        return isDark 
-          ? 'bg-green-500/20 text-green-300 border-green-400/30' 
-          : 'bg-green-100 text-green-700 border-green-300';
-      case 'closed_temporarily':
-        return isDark 
-          ? 'bg-yellow-500/20 text-yellow-300 border-yellow-400/30' 
-          : 'bg-yellow-100 text-yellow-700 border-yellow-300';
-      case 'closed_permanently':
-        return isDark 
-          ? 'bg-red-500/20 text-red-300 border-red-400/30' 
-          : 'bg-red-100 text-red-700 border-red-300';
-      default:
-        return isDark 
-          ? 'bg-gray-500/20 text-gray-300 border-gray-400/30' 
-          : 'bg-gray-100 text-gray-700 border-gray-300';
-    }
-  };
+
 
   const getCategoryColor = (category: string) => {
     if (!category) {
@@ -307,26 +284,10 @@ export const Addresses: React.FC = () => {
                 <div>
                   <span className={`font-medium ${
                     isDark ? 'text-gray-300' : 'text-gray-700'
-                  }`}>Coordinates:</span>
-                  <p className={`${
-                    isDark ? 'text-gray-400' : 'text-gray-600'
-                  } mt-1`}>{address.latitude}, {address.longitude}</p>
-                </div>
-                <div>
-                  <span className={`font-medium ${
-                    isDark ? 'text-gray-300' : 'text-gray-700'
                   }`}>Time Zone:</span>
                   <p className={`${
                     isDark ? 'text-gray-400' : 'text-gray-600'
                   } mt-1`}>{address.time_zone}</p>
-                </div>
-                <div>
-                  <span className={`font-medium ${
-                    isDark ? 'text-gray-300' : 'text-gray-700'
-                  }`}>Google Place ID:</span>
-                  <p className={`${
-                    isDark ? 'text-gray-400' : 'text-gray-600'
-                  } mt-1 text-xs font-mono break-all`}>{address.place_id}</p>
                 </div>
               </div>
             </div>
@@ -345,14 +306,6 @@ export const Addresses: React.FC = () => {
                 <div>
                   <span className={`font-medium ${
                     isDark ? 'text-gray-300' : 'text-gray-700'
-                  }`}>Google ID:</span>
-                  <p className={`${
-                    isDark ? 'text-gray-400' : 'text-gray-600'
-                  } mt-1 text-xs font-mono break-all`}>{address.google_id}</p>
-                </div>
-                <div>
-                  <span className={`font-medium ${
-                    isDark ? 'text-gray-300' : 'text-gray-700'
                   }`}>Total Reviews:</span>
                   <p className={`${
                     isDark ? 'text-gray-400' : 'text-gray-600'
@@ -368,22 +321,6 @@ export const Addresses: React.FC = () => {
                     } mt-1 break-words`}>{address.description}</p>
                   </div>
                 )}
-                <div>
-                  <span className={`font-medium ${
-                    isDark ? 'text-gray-300' : 'text-gray-700'
-                  }`}>Google Maps:</span>
-                  <a
-                    href={address.location_link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`${
-                      isDark ? 'text-purple-400 hover:text-purple-300' : 'text-purple-600 hover:text-purple-500'
-                    } mt-1 flex items-center text-sm`}
-                  >
-                    View on Google Maps
-                    <ExternalLink className="h-3 w-3 ml-1" />
-                  </a>
-                </div>
               </div>
             </div>
 
@@ -675,20 +612,43 @@ export const Addresses: React.FC = () => {
       } rounded-2xl`}>
         <div className="p-4 sm:p-6">
           <div className="relative">
-            <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${
-              isDark ? 'text-gray-400' : 'text-gray-500'
-            } h-4 w-4`} />
+            {loading ? (
+              <div className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${
+                isDark ? 'text-gray-400' : 'text-gray-500'
+              }`}>
+                <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full"></div>
+              </div>
+            ) : (
+              <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${
+                isDark ? 'text-gray-400' : 'text-gray-500'
+              } h-4 w-4`} />
+            )}
             <input
               type="text"
               placeholder="Search businesses..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              disabled={loading}
               className={`block w-full pl-10 pr-3 py-2 ${
                 isDark 
                   ? 'bg-dark-800/50 border-dark-600 text-white placeholder-gray-500' 
                   : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
-              } rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200`}
+              } rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 ${
+                loading ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             />
+            {searchTerm && !loading && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className={`absolute right-3 top-1/2 transform -translate-y-1/2 ${
+                  isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
+                } transition-colors`}
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
           </div>
         </div>
 
@@ -730,7 +690,6 @@ export const Addresses: React.FC = () => {
                           <button
                             onClick={() => {
                               setCategoryDropdownOpen(!categoryDropdownOpen);
-                              setStatusDropdownOpen(false);
                             }}
                             className={`p-1 rounded transition-colors ${
                               categoryFilter !== 'all' 
@@ -790,106 +749,7 @@ export const Addresses: React.FC = () => {
                         </div>
                       </div>
                     </th>
-                    <th className={`px-2 sm:px-4 py-3 text-left text-xs font-medium ${
-                      isDark ? 'text-gray-300' : 'text-gray-500'
-                    } uppercase tracking-wider hidden lg:table-cell w-32 relative`}>
-                      <div className="flex items-center justify-between">
-                        <span>Status</span>
-                        <div className="relative filter-dropdown">
-                          <button
-                            onClick={() => {
-                              setStatusDropdownOpen(!statusDropdownOpen);
-                              setCategoryDropdownOpen(false);
-                            }}
-                            className={`p-1 rounded transition-colors ${
-                              statusFilter !== 'all' 
-                                ? 'text-purple-500' 
-                                : isDark 
-                                  ? 'text-gray-400 hover:text-gray-300' 
-                                  : 'text-gray-500 hover:text-gray-700'
-                            }`}
-                          >
-                            <Filter className="h-3 w-3" />
-                          </button>
-                          {statusDropdownOpen && (
-                            <div className={`absolute right-0 top-full mt-1 w-48 ${
-                              isDark ? 'bg-dark-800 border-dark-600' : 'bg-white border-gray-200'
-                            } border rounded-lg shadow-lg z-50`}>
-                              <div className="py-1">
-                                <button
-                                  onClick={() => {
-                                    setStatusFilter('all');
-                                    setStatusDropdownOpen(false);
-                                  }}
-                                  className={`block w-full text-left px-3 py-2 text-sm ${
-                                    statusFilter === 'all'
-                                      ? isDark
-                                        ? 'bg-purple-600 text-white'
-                                        : 'bg-purple-100 text-purple-900'
-                                      : isDark
-                                        ? 'text-gray-300 hover:bg-dark-700'
-                                        : 'text-gray-700 hover:bg-gray-50'
-                                  } transition-colors`}
-                                >
-                                  All Status
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setStatusFilter('operational');
-                                    setStatusDropdownOpen(false);
-                                  }}
-                                  className={`block w-full text-left px-3 py-2 text-sm ${
-                                    statusFilter === 'operational'
-                                      ? isDark
-                                        ? 'bg-purple-600 text-white'
-                                        : 'bg-purple-100 text-purple-900'
-                                      : isDark
-                                        ? 'text-gray-300 hover:bg-dark-700'
-                                        : 'text-gray-700 hover:bg-gray-50'
-                                  } transition-colors`}
-                                >
-                                  Operational
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setStatusFilter('closed_temporarily');
-                                    setStatusDropdownOpen(false);
-                                  }}
-                                  className={`block w-full text-left px-3 py-2 text-sm ${
-                                    statusFilter === 'closed_temporarily'
-                                      ? isDark
-                                        ? 'bg-purple-600 text-white'
-                                        : 'bg-purple-100 text-purple-900'
-                                      : isDark
-                                        ? 'text-gray-300 hover:bg-dark-700'
-                                        : 'text-gray-700 hover:bg-gray-50'
-                                  } transition-colors`}
-                                >
-                                  Closed Temporarily
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setStatusFilter('closed_permanently');
-                                    setStatusDropdownOpen(false);
-                                  }}
-                                  className={`block w-full text-left px-3 py-2 text-sm ${
-                                    statusFilter === 'closed_permanently'
-                                      ? isDark
-                                        ? 'bg-purple-600 text-white'
-                                        : 'bg-purple-100 text-purple-900'
-                                      : isDark
-                                        ? 'text-gray-300 hover:bg-dark-700'
-                                        : 'text-gray-700 hover:bg-gray-50'
-                                  } transition-colors`}
-                                >
-                                  Closed Permanently
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </th>
+
                     <th className={`px-2 sm:px-4 py-3 text-left text-xs font-medium ${
                       isDark ? 'text-gray-300' : 'text-gray-500'
                     } uppercase tracking-wider hidden xl:table-cell w-24`}>
@@ -905,7 +765,7 @@ export const Addresses: React.FC = () => {
                 <tbody className={`divide-y ${
                   isDark ? 'divide-dark-600' : 'divide-gray-200'
                 }`}>
-                  {filteredAddresses.map((address) => (
+                  {addresses.map((address) => (
                     <React.Fragment key={address.encrypted_id}>
                       <tr className={`${
                         isDark ? 'hover:bg-dark-800/30' : 'hover:bg-gray-50'
@@ -989,18 +849,16 @@ export const Addresses: React.FC = () => {
                             </span>
                           </div>
                         </td>
-                        <td className="px-2 sm:px-4 py-4 hidden lg:table-cell w-32">
-                          <div className="max-w-full">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(address.business_status)} max-w-full`} title={address.business_status}>
-                              <span className="truncate">{address.business_status ? address.business_status.replace('_', ' ') : 'Unknown'}</span>
-                            </span>
-                          </div>
-                        </td>
+
                         <td className="px-2 sm:px-4 py-4 hidden xl:table-cell w-24">
                           <div className={`text-xs ${
                             isDark ? 'text-gray-400' : 'text-gray-600'
-                          }`} title={formatDistanceToNow(new Date(address.created_at), { addSuffix: true })}>
-                            {formatDistanceToNow(new Date(address.created_at), { addSuffix: true })}
+                          }`} title={formatRelativeTime(address.created_at)}>
+                            {(() => {
+                              // Debug logging to verify timezone fix
+                              debugDateInfo(`Address: ${address.name}`, address.created_at);
+                              return formatRelativeTime(address.created_at);
+                            })()}
                           </div>
                         </td>
                         <td className="px-2 sm:px-3 py-4 whitespace-nowrap text-right text-sm font-medium w-20 sm:w-24">
@@ -1044,7 +902,7 @@ export const Addresses: React.FC = () => {
         ) : null}
 
         {/* No data state */}
-        {(!addresses || addresses.length === 0) && !loading && !error && (
+        {(!addresses || addresses.length === 0) && !loading && !error && !searchTerm && !categoryFilter && categoryFilter !== 'all' && (
           <div className="text-center py-12">
             <div className="max-w-md mx-auto">
               <div className="w-16 h-16 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -1062,8 +920,58 @@ export const Addresses: React.FC = () => {
           </div>
         )}
 
+        {/* No search results state */}
+        {(!addresses || addresses.length === 0) && !loading && !error && (searchTerm || (categoryFilter && categoryFilter !== 'all')) && (
+          <div className="text-center py-12">
+            <div className="max-w-md mx-auto">
+              <div className="w-16 h-16 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Search className="h-8 w-8 text-purple-400" />
+              </div>
+              <h3 className={`text-lg font-medium ${
+                isDark ? 'text-white' : 'text-gray-900'
+              } mb-2`}>No matching addresses found</h3>
+              <p className={`${
+                isDark ? 'text-gray-400' : 'text-gray-600'
+              } mb-6`}>
+                {searchTerm && categoryFilter && categoryFilter !== 'all' 
+                  ? `No addresses found matching "${searchTerm}" in category "${categoryFilter}"`
+                  : searchTerm 
+                    ? `No addresses found matching "${searchTerm}"`
+                    : `No addresses found in category "${categoryFilter}"`
+                }
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                      isDark 
+                        ? 'bg-purple-600 hover:bg-purple-700 text-white' 
+                        : 'bg-brand-primary-600 hover:bg-brand-primary-700 text-white'
+                    } transition-colors`}
+                  >
+                    Clear Search
+                  </button>
+                )}
+                {categoryFilter && categoryFilter !== 'all' && (
+                  <button
+                    onClick={() => setCategoryFilter('all')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                      isDark 
+                        ? 'bg-gray-600 hover:bg-gray-700 text-white' 
+                        : 'bg-gray-600 hover:bg-gray-700 text-white'
+                    } transition-colors`}
+                  >
+                    Clear Filter
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* No results on current page */}
-        {addresses && addresses.length === 0 && currentPage > 1 && (
+        {addresses && addresses.length === 0 && currentPage > 1 && !loading && !error && (
           <div className="text-center py-12">
             <div className="max-w-md mx-auto">
               <div className="w-16 h-16 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -1077,25 +985,16 @@ export const Addresses: React.FC = () => {
               } mb-6`}>
                 You've reached beyond the available pages. Try going back to an earlier page.
               </p>
-            </div>
-          </div>
-        )}
-
-        {/* No filtered results state */}
-        {addresses && addresses.length > 0 && filteredAddresses.length === 0 && (
-          <div className="text-center py-12">
-            <div className="max-w-md mx-auto">
-              <div className="w-16 h-16 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Search className="h-8 w-8 text-purple-400" />
-              </div>
-              <h3 className={`text-lg font-medium ${
-                isDark ? 'text-white' : 'text-gray-900'
-              } mb-2`}>No matching addresses found</h3>
-              <p className={`${
-                isDark ? 'text-gray-400' : 'text-gray-600'
-              } mb-6`}>
-                Try adjusting your search or filters to find what you're looking for
-              </p>
+              <button
+                onClick={() => goToPage(1)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                  isDark 
+                    ? 'bg-purple-600 hover:bg-purple-700 text-white' 
+                    : 'bg-brand-primary-600 hover:bg-brand-primary-700 text-white'
+                } transition-colors`}
+              >
+                Go to First Page
+              </button>
             </div>
           </div>
         )}
