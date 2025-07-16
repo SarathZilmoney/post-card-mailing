@@ -12,6 +12,7 @@ export const useAddresses = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [perPage, setPerPage] = useState(10);
 
   // Debounce search term
   useEffect(() => {
@@ -41,7 +42,7 @@ export const useAddresses = () => {
     try {
       setLoading(true);
       const filters = buildFilters();
-      const data = await addressService.getAddresses(page, filters);
+      const data = await addressService.getAddresses(page, perPage, filters);
       setAddresses(data.addresses);
       setTotal(data.total);
       setCurrentPage(data.currentPage);
@@ -119,11 +120,11 @@ export const useAddresses = () => {
     }
   };
 
-  // Refetch addresses when filters change
+  // Refetch addresses when filters or perPage change
   useEffect(() => {
     setCurrentPage(1); // Reset to first page when filters change
     fetchAddresses(1);
-  }, [debouncedSearchTerm, categoryFilter]);
+  }, [debouncedSearchTerm, categoryFilter, perPage]);
 
   return {
     addresses,
@@ -136,6 +137,8 @@ export const useAddresses = () => {
     setSearchTerm,
     categoryFilter,
     setCategoryFilter,
+    perPage,
+    setPerPage,
     refetch: fetchAddresses,
     goToPage,
     goToNextPage,

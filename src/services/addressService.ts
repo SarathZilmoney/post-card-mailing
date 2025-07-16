@@ -1,13 +1,14 @@
 import { Address, AddressResponse, ImportAddressesResponse } from '../types';
 import { httpService } from './httpService';
+import { summaryService } from './summaryService';
 
 class AddressService {
-  async getAddresses(page = 1, filters?: Record<string, unknown>): Promise<{ addresses: Address[]; total: number; currentPage: number; totalPages: number }> {
+  async getAddresses(page = 1, perPage = 10, filters?: Record<string, unknown>): Promise<{ addresses: Address[]; total: number; currentPage: number; totalPages: number }> {
     try {
       // Build query parameters
       const queryParams = new URLSearchParams({
         page: page.toString(),
-        per_page: '10'
+        per_page: perPage.toString()
       });
       
       // Add search parameter if provided
@@ -33,19 +34,35 @@ class AddressService {
       
       if (response.success) {
         const addresses = response.data || [];
-        
-        // Since API doesn't return pagination metadata, we use a different approach
-        const perPage = 10;
         const returnedCount = addresses.length;
         
-        // Determine if there are more pages based on returned count
-        const isFullPage = returnedCount === perPage;
-        const hasNextPage = isFullPage;
+        // Use summary data for better pagination when no filters are applied
+        let total = 0;
+        let totalPages = 1;
         
-        // Instead of estimating misleading totals, we'll use a more honest approach
-        // We only know for certain up to the current page
-        const knownTotal = (page - 1) * perPage + returnedCount;
-        const totalPages = hasNextPage ? page + 1 : page; // Show next page only if we're confident it exists
+        // Check if we have filters applied
+        const hasFilters = filters && (filters.name || (filters.category && filters.category !== 'all'));
+        
+        if (!hasFilters) {
+          // No filters applied, use summary data for accurate pagination
+          try {
+            const summary = await summaryService.getSummary();
+            total = summary.total_addresses;
+            totalPages = Math.ceil(total / perPage);
+          } catch (error) {
+            // Fallback to the old method if summary fails
+            const isFullPage = returnedCount === perPage;
+            const hasNextPage = isFullPage;
+            total = (page - 1) * perPage + returnedCount;
+            totalPages = hasNextPage ? page + 1 : page;
+          }
+        } else {
+          // Filters applied, use the old method since summary doesn't account for filters
+          const isFullPage = returnedCount === perPage;
+          const hasNextPage = isFullPage;
+          total = (page - 1) * perPage + returnedCount;
+          totalPages = hasNextPage ? page + 1 : page;
+        }
         
         // Debug logging in development
         if (import.meta.env.DEV) {
@@ -53,18 +70,17 @@ class AddressService {
             requestedPage: page,
             returnedCount,
             perPage,
-            isFullPage,
-            hasNextPage,
-            knownTotal,
+            total,
             totalPages,
             currentPage: page,
-            filters
+            filters,
+            hasFilters
           });
         }
         
         return {
-          addresses: addresses, // Return all addresses from API (already paginated server-side)
-          total: knownTotal, // Only count what we know for sure
+          addresses: addresses,
+          total: total,
           currentPage: page,
           totalPages: totalPages
         };

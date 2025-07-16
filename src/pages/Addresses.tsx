@@ -22,6 +22,8 @@ export const Addresses: React.FC = () => {
     setSearchTerm,
     categoryFilter,
     setCategoryFilter,
+    perPage,
+    setPerPage,
     goToPage, 
     goToNextPage, 
     goToPreviousPage, 
@@ -252,8 +254,8 @@ export const Addresses: React.FC = () => {
       <tr key={`${address.encrypted_id}-expanded`} className={`${
         isDark ? 'bg-dark-900/50' : 'bg-gray-50/50'
       } border-t-0 animate-slideDown`}>
-        <td colSpan={8} className="px-3 sm:px-6 py-4 animate-fadeIn">
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+        <td colSpan={8} className="px-3 sm:px-6 py-6 animate-fadeIn min-w-0 w-full">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 w-full max-w-none">
             {/* Location Details */}
             <div className={`${
               isDark ? 'bg-dark-800/30 border-dark-600' : 'bg-white border-gray-200'
@@ -327,7 +329,7 @@ export const Addresses: React.FC = () => {
             {/* Working Hours */}
             <div className={`${
               isDark ? 'bg-dark-800/30 border-dark-600' : 'bg-white border-gray-200'
-            } rounded-lg p-4 border lg:col-span-2 xl:col-span-1`}>
+            } rounded-lg p-4 border`}>
               <h4 className={`text-sm font-semibold ${
                 isDark ? 'text-white' : 'text-gray-900'
               } mb-3 flex items-center`}>
@@ -380,7 +382,7 @@ export const Addresses: React.FC = () => {
             isDark ? 'text-gray-400' : 'text-gray-600'
           } text-center sm:text-left`}>
             {totalPages > 1 ? (
-              <>Showing page {currentPage} ({(currentPage - 1) * 10 + 1}-{total} addresses) {totalPages > currentPage ? '• More pages available' : ''}</>
+              <>Showing page {currentPage} ({(currentPage - 1) * perPage + 1}-{Math.min(currentPage * perPage, total)} addresses) {totalPages > currentPage ? '• More pages available' : ''}</>
             ) : (
               <>Showing all {total} addresses</>
             )}
@@ -650,13 +652,51 @@ export const Addresses: React.FC = () => {
               </button>
             )}
           </div>
+          
+          {/* Per Page Selector */}
+          <div className="flex items-center justify-between mt-4">
+            <div className="flex items-center space-x-2">
+              <label className={`text-sm font-medium ${
+                isDark ? 'text-gray-300' : 'text-gray-700'
+              }`}>
+                Show:
+              </label>
+              <select
+                value={perPage}
+                onChange={(e) => setPerPage(Number(e.target.value))}
+                className={`px-3 py-1 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 ${
+                  isDark 
+                    ? 'bg-dark-800/50 border-dark-600 text-white' 
+                    : 'bg-white border-gray-300 text-gray-900'
+                }`}
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+                <option value={500}>500</option>
+              </select>
+              <span className={`text-sm ${
+                isDark ? 'text-gray-400' : 'text-gray-600'
+              }`}>
+                per page
+              </span>
+            </div>
+            
+            {/* Results count */}
+            <div className={`text-sm ${
+              isDark ? 'text-gray-400' : 'text-gray-600'
+            }`}>
+              {total > 0 ? `Showing ${((currentPage - 1) * perPage) + 1}-${Math.min(currentPage * perPage, total)} of ${total.toLocaleString()} addresses` : 'No addresses found'}
+            </div>
+          </div>
         </div>
 
         {/* Show data table only if there are addresses */}
         {addresses && addresses.length > 0 ? (
           <>
             <div className="w-full">
-              <table className="w-full table-fixed">
+              <table className="w-full table-auto">
                 <thead className={`${
                   isDark ? 'bg-dark-800/50' : 'bg-gray-50'
                 }`}>
@@ -723,26 +763,28 @@ export const Addresses: React.FC = () => {
                                 >
                                   All Categories
                                 </button>
-                                {categories.map(category => (
-                                  <button
-                                    key={category.encrypted_id}
-                                    onClick={() => {
-                                      setCategoryFilter(category.name);
-                                      setCategoryDropdownOpen(false);
-                                    }}
-                                    className={`block w-full text-left px-3 py-2 text-sm ${
-                                      categoryFilter === category.name
-                                        ? isDark
-                                          ? 'bg-purple-600 text-white'
-                                          : 'bg-purple-100 text-purple-900'
-                                        : isDark
-                                          ? 'text-gray-300 hover:bg-dark-700'
-                                          : 'text-gray-700 hover:bg-gray-50'
-                                    } transition-colors`}
-                                  >
-                                    {category.name && category.name.charAt(0).toUpperCase() + category.name.slice(1)}
-                                  </button>
-                                ))}
+                                <div className="max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 dark:scrollbar-thumb-gray-600 dark:scrollbar-track-gray-800">
+                                  {categories.map(category => (
+                                    <button
+                                      key={category.encrypted_id}
+                                      onClick={() => {
+                                        setCategoryFilter(category.name);
+                                        setCategoryDropdownOpen(false);
+                                      }}
+                                      className={`block w-full text-left px-3 py-2 text-sm ${
+                                        categoryFilter === category.name
+                                          ? isDark
+                                            ? 'bg-purple-600 text-white'
+                                            : 'bg-purple-100 text-purple-900'
+                                          : isDark
+                                            ? 'text-gray-300 hover:bg-dark-700'
+                                            : 'text-gray-700 hover:bg-gray-50'
+                                      } transition-colors`}
+                                    >
+                                      {category.name && category.name.charAt(0).toUpperCase() + category.name.slice(1)}
+                                    </button>
+                                  ))}
+                                </div>
                               </div>
                             </div>
                           )}
@@ -902,7 +944,7 @@ export const Addresses: React.FC = () => {
         ) : null}
 
         {/* No data state */}
-        {(!addresses || addresses.length === 0) && !loading && !error && !searchTerm && !categoryFilter && categoryFilter !== 'all' && (
+        {(!addresses || addresses.length === 0) && !loading && !error && !searchTerm && categoryFilter === 'all' && (
           <div className="text-center py-12">
             <div className="max-w-md mx-auto">
               <div className="w-16 h-16 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
