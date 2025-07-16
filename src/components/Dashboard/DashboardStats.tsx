@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mail, Users, TrendingUp, DollarSign } from 'lucide-react';
+import { Mail, Users, TrendingUp } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useCampaigns } from '../../hooks/useCampaigns';
 import { useAddresses } from '../../hooks/useAddresses';
@@ -80,21 +80,9 @@ export const DashboardStats: React.FC = () => {
   const totalDelivered = campaigns.reduce((sum, campaign) => sum + campaign.deliveredCount, 0);
   const deliveryRate = totalSent > 0 ? ((totalDelivered / totalSent) * 100) : 0;
   
-  const totalSpend = campaigns.reduce((sum, campaign) => sum + campaign.cost, 0);
-  
-  // Calculate this month's spend (campaigns created in current month)
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
-  const monthlySpend = campaigns
-    .filter(campaign => {
-      const campaignDate = new Date(campaign.createdAt);
-      return campaignDate.getMonth() === currentMonth && campaignDate.getFullYear() === currentYear;
-    })
-    .reduce((sum, campaign) => sum + campaign.cost, 0);
-
   // Calculate active campaigns
   const activeCampaigns = campaigns.filter(campaign => 
-    campaign.status === 'active' || campaign.status === 'scheduled'
+    campaign.status === 'in_progress'
   ).length;
 
   // Format numbers
@@ -107,20 +95,11 @@ export const DashboardStats: React.FC = () => {
     return num.toString();
   };
 
-  const formatCurrency = (amount: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
-
   // Show loading state
   if (campaignsLoading || addressesLoading) {
     return (
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {[...Array(4)].map((_, index) => (
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {[...Array(3)].map((_, index) => (
           <div key={index} className="animate-pulse">
             <div className="bg-gray-200 dark:bg-gray-700 rounded-2xl h-24"></div>
           </div>
@@ -130,7 +109,7 @@ export const DashboardStats: React.FC = () => {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
       <StatsCard
         title="Total Campaigns"
         value={totalCampaigns}
@@ -151,13 +130,6 @@ export const DashboardStats: React.FC = () => {
         change={totalSent > 0 ? `${formatNumber(totalDelivered)} delivered` : "No sends yet"}
         changeType={deliveryRate >= 90 ? "positive" : deliveryRate >= 80 ? undefined : "negative"}
         icon={TrendingUp}
-      />
-      <StatsCard
-        title="Monthly Spend"
-        value={formatCurrency(monthlySpend)}
-        change={totalSpend > monthlySpend ? `${formatCurrency(totalSpend)} total` : "This month"}
-        changeType={monthlySpend > 0 ? "positive" : undefined}
-        icon={DollarSign}
       />
     </div>
   );

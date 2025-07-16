@@ -1,14 +1,15 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import { X, Upload, FileText, Calendar, Loader, Loader2, CheckCircle, AlertCircle, ExternalLink, Users, Tag } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { Calendar, FileText, Upload, X, CheckCircle, Loader2, Users, Tag, ExternalLink } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useCampaigns } from '../../hooks/useCampaigns';
 import { useTheme } from '../../context/ThemeContext';
+import { useCampaigns } from '../../hooks/useCampaigns';
 import { useAlert } from '../../context/AlertContext';
+import { useNavigate } from 'react-router-dom';
+import { Campaign, AddressCategory } from '../../types';
 import { categoryService } from '../../services/categoryService';
-import { AddressCategory, Campaign } from '../../types';
 import toast from 'react-hot-toast';
+import { formatDateForInput } from '../../utils/dateUtils';
 
 interface CampaignModalProps {
   open: boolean;
@@ -52,6 +53,8 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
   const navigate = useNavigate();
   const alert = useAlert();
   const isEditMode = !!editCampaign;
+
+  // Note: formatDateForInput is now imported from utils/dateUtils
 
   // Clear all form data and state
   const clearFormData = () => {
@@ -109,9 +112,9 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
     defaultValues: {
       name: editCampaign?.name || '',
       description: editCampaign?.description || '',
-      startDate: editCampaign?.scheduledDate || new Date().toISOString().split('T')[0],
+      startDate: formatDateForInput(editCampaign?.scheduledDate),
       category: '', // Will be set after categories are loaded
-      targetAddressCount: editCampaign?.targetAddressCount || 100,
+      targetAddressCount: editCampaign?.targetAddressCount || editCampaign?.addressCount || 100,
       zipCode: editCampaign?.zipCode || ''
     }
   });
@@ -137,12 +140,26 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
         ? categories.find(cat => cat.name === editCampaign.category)?.encrypted_id || ''
         : '';
       
+      const addressCount = editCampaign?.targetAddressCount || editCampaign?.addressCount || 100;
+      
+      // Debug log for edit mode
+      if (editCampaign && import.meta.env.DEV) {
+        console.log('Edit campaign form reset:', {
+          editCampaign,
+          targetAddressCount: editCampaign?.targetAddressCount,
+          addressCount: editCampaign?.addressCount,
+          finalAddressCount: addressCount,
+          originalScheduledDate: editCampaign?.scheduledDate,
+          formattedStartDate: formatDateForInput(editCampaign?.scheduledDate)
+        });
+      }
+      
       reset({
         name: editCampaign?.name || '',
         description: editCampaign?.description || '',
-        startDate: editCampaign?.scheduledDate || new Date().toISOString().split('T')[0],
+        startDate: formatDateForInput(editCampaign?.scheduledDate),
         category: categoryId,
-        targetAddressCount: editCampaign?.targetAddressCount || 100,
+        targetAddressCount: addressCount,
         zipCode: editCampaign?.zipCode || ''
       });
       
@@ -312,6 +329,12 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
         return;
       }
       
+      if (!data.category?.trim()) {
+        alert.error('Address category is required');
+        setIsSubmitting(false);
+        return;
+      }
+      
       // For create mode, validate file. For edit mode, validate only if file is provided
       if (selectedImage && !imageValidation?.isValid) {
         alert.error('Please upload a valid PDF file');
@@ -333,17 +356,12 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
       
       // For edit mode, add campaign ID and encrypted_id
       if (isEditMode && editCampaign) {
-        // Only append campaign_id if it exists (it might be undefined in new API response)
-        if (editCampaign.id) {
-          formData.append('campaign_id', editCampaign.id);
-        }
+        // Use encrypted_id as the primary identifier since id is not in the new API response
         formData.append('encrypted_id', editCampaign.encrypted_id);
         
         // Log what's being added for edit mode
         console.log('Edit mode - adding to FormData:', {
-          campaign_id: editCampaign.id,
-          encrypted_id: editCampaign.encrypted_id,
-          hasId: !!editCampaign.id
+          encrypted_id: editCampaign.encrypted_id
         });
       }
       
@@ -494,7 +512,7 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
               <div>
                 <label className={`block text-sm font-medium ${
                   isDark ? 'text-gray-200' : 'text-gray-700'
-                } mb-2`}>Address Category</label>
+                } mb-2`}>Address Category *</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Tag className={`h-4 w-4 ${
@@ -502,7 +520,9 @@ export const CampaignModal: React.FC<CampaignModalProps> = ({ open, onClose, edi
                     }`} />
                   </div>
                   <select
-                    {...register('category')}
+                    {...register('category', { 
+                      required: 'Address category is required' 
+                    })}
                     onChange={handleCategoryChange}
                     disabled={loadingCategories}
                     className={`block w-full pl-10 pr-12 py-3 ${

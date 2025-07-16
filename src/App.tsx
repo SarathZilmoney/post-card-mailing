@@ -8,6 +8,7 @@ import { LoginForm } from './components/Auth/LoginForm';
 import { Layout } from './components/Layout/Layout';
 import { Dashboard } from './pages/Dashboard';
 import { Campaigns } from './pages/Campaigns';
+import { CampaignView } from './pages/CampaignView';
 import { Addresses } from './pages/Addresses';
 import { Outscrapper } from './pages/Outscrapper';
 import { Analytics } from './pages/Analytics';
@@ -31,6 +32,7 @@ function App() {
               >
                 <Route index element={<Dashboard />} />
                 <Route path="campaigns" element={<Campaigns />} />
+                <Route path="campaigns/:encryptedId" element={<CampaignView />} />
                 <Route path="addresses" element={<Addresses />} />
                 <Route path="outscrapper" element={<Outscrapper />} />
                 <Route path="analytics" element={<Analytics />} />

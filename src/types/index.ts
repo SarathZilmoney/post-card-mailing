@@ -32,7 +32,6 @@ export interface CampaignRun {
   sentCount: number;
   deliveredCount: number;
   returnedCount: number;
-  cost: number;
   errorMessage?: string;
 }
 
@@ -41,16 +40,15 @@ export interface Campaign {
   encrypted_id: string;
   name: string;
   description: string;
-  status: 'draft' | 'scheduled' | 'active' | 'completed' | 'paused';
+  status: 'pending' | 'in_progress' | 'completed';
   createdAt: string;
   scheduledDate?: string;
   nextScheduledRunAt?: string;
-  postcardDesign?: string;
+  postcardDesign?: string; // Optional since it's no longer in the API response
   addressCount: number;
   sentCount: number;
   deliveredCount: number;
   returnedCount: number;
-  cost: number;
   category?: string;
   targetAddressCount?: number;
   zipCode?: string;
@@ -110,7 +108,6 @@ export interface Analytics {
   totalAddresses: number;
   totalSent: number;
   deliveryRate: number;
-  avgCostPerPiece: number;
   monthlySpend: number;
   outscrapperCreditsUsed: number;
 }
@@ -175,4 +172,68 @@ export interface ImportAddressesResponse {
   status: string;
   message: string;
   job_id: number;
+}
+
+// New types for detailed campaign view
+export interface CampaignAddress {
+  id: number;
+  campaign_id: number;
+  address_id: number;
+  status: number;
+  failure_reason: string | null;
+  address: {
+    id: number;
+    name: string;
+    payee_id: number | null;
+    payee: any | null;
+  };
+}
+
+export interface CampaignAttachment {
+  id: number;
+  attachable_id: number;
+  file_name: string;
+  file_nick_name: string;
+  page_count: number;
+  created_for_id: number;
+  created_by_id: number;
+  attachable_type: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+  formated_date: string;
+  encrypted_id: string;
+  public_url: string;
+}
+
+export interface CampaignCategory {
+  id: number;
+  name: string;
+  description: string;
+}
+
+export interface DetailedCampaign {
+  id: number;
+  campaign_name: string;
+  description: string;
+  start_date: string;
+  end_date: string | null;
+  category_id: number;
+  file_path: string | null;
+  cycle_duration_days: number;
+  sends_per_cycle: number;
+  run_count: number;
+  next_scheduled_run_at: string | null;
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+  category: CampaignCategory;
+  addresses: CampaignAddress[];
+  attachments: CampaignAttachment[];
+}
+
+export interface DetailedCampaignResponse {
+  success: boolean;
+  data: DetailedCampaign;
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Campaign, CampaignRun } from '../types';
+import { Campaign, CampaignRun, DetailedCampaign } from '../types';
 import { campaignService } from '../services/campaignService';
 
 export const useCampaigns = () => {
@@ -46,10 +46,10 @@ export const useCampaigns = () => {
     }
   };
 
-  const updateCampaign = async (id: string, updates: Partial<Campaign>) => {
+  const updateCampaign = async (encryptedId: string, updates: Partial<Campaign>) => {
     try {
-      const updatedCampaign = await campaignService.updateCampaign(id, updates);
-      setCampaigns(prev => prev.map(c => c.id === id ? updatedCampaign : c));
+      const updatedCampaign = await campaignService.updateCampaign(encryptedId, updates);
+      setCampaigns(prev => prev.map(c => c.encrypted_id === encryptedId ? updatedCampaign : c));
       return updatedCampaign;
     } catch (err) {
       throw err;
@@ -85,19 +85,27 @@ export const useCampaigns = () => {
     }
   };
 
-  const stopCampaign = async (id: string) => {
+  const stopCampaign = async (encryptedId: string) => {
     try {
-      const updatedCampaign = await campaignService.stopCampaign(id);
-      setCampaigns(prev => prev.map(c => c.id === id ? updatedCampaign : c));
+      const updatedCampaign = await campaignService.stopCampaign(encryptedId);
+      setCampaigns(prev => prev.map(c => c.encrypted_id === encryptedId ? updatedCampaign : c));
       return updatedCampaign;
     } catch (err) {
       throw err;
     }
   };
 
-  const getRunHistory = async (id: string): Promise<CampaignRun[]> => {
+  const getRunHistory = async (encryptedId: string): Promise<CampaignRun[]> => {
     try {
-      return await campaignService.getRunHistory(id);
+      return await campaignService.getRunHistory(encryptedId);
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  const getCampaign = async (encryptedId: string): Promise<DetailedCampaign> => {
+    try {
+      return await campaignService.getCampaign(encryptedId);
     } catch (err) {
       throw err;
     }
@@ -118,6 +126,7 @@ export const useCampaigns = () => {
     deleteCampaign,
     runCampaign,
     stopCampaign,
-    getRunHistory
+    getRunHistory,
+    getCampaign
   };
 };

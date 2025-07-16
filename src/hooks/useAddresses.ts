@@ -1,18 +1,46 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Address, ImportAddressesResponse } from '../types';
 import { addressService } from '../services/addressService';
 
-export const useAddresses = (filters?: Record<string, unknown>) => {
+export const useAddresses = () => {
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
 
-  const fetchAddresses = async (page = currentPage) => {
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500); // 500ms delay
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Build filters object
+  const buildFilters = useCallback(() => {
+    const filters: Record<string, unknown> = {};
+    
+    if (debouncedSearchTerm.trim()) {
+      filters.name = debouncedSearchTerm.trim();
+    }
+    
+    if (categoryFilter && categoryFilter !== 'all') {
+      filters.category = categoryFilter;
+    }
+    
+    return filters;
+  }, [debouncedSearchTerm, categoryFilter]);
+
+  const fetchAddresses = async (page = 1) => {
     try {
       setLoading(true);
+      const filters = buildFilters();
       const data = await addressService.getAddresses(page, filters);
       setAddresses(data.addresses);
       setTotal(data.total);
@@ -27,7 +55,7 @@ export const useAddresses = (filters?: Record<string, unknown>) => {
   };
 
   const goToPage = (page: number) => {
-    if (page >= 1 && page <= totalPages && page !== currentPage) {
+    if (page >= 1 && page !== currentPage) {
       setCurrentPage(page);
       fetchAddresses(page);
     }
@@ -91,9 +119,11 @@ export const useAddresses = (filters?: Record<string, unknown>) => {
     }
   };
 
+  // Refetch addresses when filters change
   useEffect(() => {
+    setCurrentPage(1); // Reset to first page when filters change
     fetchAddresses(1);
-  }, [filters]);
+  }, [debouncedSearchTerm, categoryFilter]);
 
   return {
     addresses,
@@ -102,6 +132,10 @@ export const useAddresses = (filters?: Record<string, unknown>) => {
     totalPages,
     loading,
     error,
+    searchTerm,
+    setSearchTerm,
+    categoryFilter,
+    setCategoryFilter,
     refetch: fetchAddresses,
     goToPage,
     goToNextPage,

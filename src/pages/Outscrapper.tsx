@@ -295,11 +295,7 @@ export const Outscrapper: React.FC = () => {
           <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4 sm:pt-6 border-t ${
             isDark ? 'border-white/10' : 'border-light-300'
           }`}>
-            <div className={`${
-              isDark ? 'text-gray-400' : 'text-light-500'
-            } text-sm text-center sm:text-left`}>
-              Estimated cost: ~$0.02-0.05 per address fetched
-            </div>
+
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <button
                 onClick={() => setShowFilters(false)}

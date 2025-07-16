@@ -32,20 +32,17 @@ export const RecentCampaigns: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     const colors = {
-      active: isDark 
+      pending: isDark 
+        ? 'bg-gray-500/20 text-gray-300 border-gray-400/30' 
+        : 'bg-gray-100/80 text-gray-700 border-gray-200',
+      in_progress: isDark 
         ? 'bg-blue-500/20 text-blue-300 border-blue-400/30' 
         : 'bg-blue-100/80 text-blue-700 border-blue-200',
       completed: isDark 
         ? 'bg-green-500/20 text-green-300 border-green-400/30' 
         : 'bg-green-100/80 text-green-700 border-green-200',
-      draft: isDark 
-        ? 'bg-gray-500/20 text-gray-300 border-gray-400/30' 
-        : 'bg-light-200/80 text-light-700 border-light-300',
-      paused: isDark 
-        ? 'bg-yellow-500/20 text-yellow-300 border-yellow-400/30' 
-        : 'bg-yellow-100/80 text-yellow-700 border-yellow-200',
     } as const;
-    return colors[status as keyof typeof colors] || colors.draft;
+    return colors[status as keyof typeof colors] || colors.pending;
   };
 
   return (
@@ -80,7 +77,10 @@ export const RecentCampaigns: React.FC = () => {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center space-x-3 mb-2">
                   <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(campaign.status)}`}>
-                    {campaign.status.toUpperCase()}
+                    {campaign.status === 'pending' ? 'PENDING' : 
+                     campaign.status === 'in_progress' ? 'IN PROGRESS' : 
+                     campaign.status === 'completed' ? 'COMPLETE' : 
+                     'UNKNOWN'}
                   </span>
                   <h4 className={`text-sm font-medium ${
                     isDark ? 'text-white' : 'text-light-900'

@@ -31,7 +31,7 @@ export const RunTrackingDisplay: React.FC<RunTrackingDisplayProps> = ({
     
     setLoading(true);
     try {
-      const history = await onGetRunHistory(campaign.id);
+      const history = await onGetRunHistory(campaign.encrypted_id);
       setRunHistory(history);
     } catch (error) {
       // Error loading run history - silently fail
@@ -204,22 +204,36 @@ export const RunTrackingDisplay: React.FC<RunTrackingDisplayProps> = ({
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-2 gap-3 text-sm">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-center mb-4">
           <div>
-            <span className={`font-medium ${
-              isDark ? 'text-gray-300' : 'text-gray-700'
-            }`}>Total Sent:</span>
-            <span className={`ml-2 ${
+            <div className={`text-sm font-semibold ${
+              isDark ? 'text-white' : 'text-gray-900'
+            }`}>
+              {campaign.sentCount || 0}
+            </div>
+            <div className={`text-xs ${
               isDark ? 'text-gray-400' : 'text-gray-600'
-            }`}>{campaign.sentCount.toLocaleString()}</span>
+            }`}>Sent</div>
           </div>
           <div>
-            <span className={`font-medium ${
-              isDark ? 'text-gray-300' : 'text-gray-700'
-            }`}>Total Cost:</span>
-            <span className={`ml-2 ${
+            <div className={`text-sm font-semibold ${
+              isDark ? 'text-white' : 'text-gray-900'
+            }`}>
+              {campaign.deliveredCount || 0}
+            </div>
+            <div className={`text-xs ${
               isDark ? 'text-gray-400' : 'text-gray-600'
-            }`}>${campaign.cost.toFixed(2)}</span>
+            }`}>Delivered</div>
+          </div>
+          <div>
+            <div className={`text-sm font-semibold ${
+              isDark ? 'text-white' : 'text-gray-900'
+            }`}>
+              {campaign.returnedCount || 0}
+            </div>
+            <div className={`text-xs ${
+              isDark ? 'text-gray-400' : 'text-gray-600'
+            }`}>Returned</div>
           </div>
         </div>
       </div>
@@ -292,14 +306,7 @@ export const RunTrackingDisplay: React.FC<RunTrackingDisplayProps> = ({
                         isDark ? 'text-gray-400' : 'text-gray-600'
                       }`}>{run.returnedCount}</span>
                     </div>
-                    <div>
-                      <span className={`font-medium ${
-                        isDark ? 'text-gray-300' : 'text-gray-700'
-                      }`}>Cost:</span>
-                      <span className={`ml-1 ${
-                        isDark ? 'text-gray-400' : 'text-gray-600'
-                      }`}>${run.cost.toFixed(2)}</span>
-                    </div>
+
                   </div>
                   
                   {run.errorMessage && (

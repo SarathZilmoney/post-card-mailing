@@ -1,11 +1,9 @@
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export const CAMPAIGN_STATUSES = {
-  DRAFT: 'draft',
-  SCHEDULED: 'scheduled',
-  ACTIVE: 'active',
-  COMPLETED: 'completed',
-  PAUSED: 'paused'
+  PENDING: 'pending',
+  IN_PROGRESS: 'in_progress',
+  COMPLETED: 'completed'
 } as const;
 
 export const ADDRESS_STATUSES = {

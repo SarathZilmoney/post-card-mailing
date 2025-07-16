@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, Sun, Moon, LayoutDashboard, Mail, Users, BarChart3, Database, Clock, User, LogOut, Menu, X } from 'lucide-react';
+import { Sun, Moon, LayoutDashboard, Mail, Users, BarChart3, Database, Clock, User, LogOut, Menu, X } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../hooks/useAuth';
@@ -129,20 +129,6 @@ export const Header: React.FC = () => {
             )}
           </button>
 
-          {/* Notifications - Hidden on mobile */}
-          <button className={`hidden sm:block relative p-2 ${
-            isDark 
-              ? 'text-gray-400 hover:text-white hover:bg-gray-800' 
-              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-          } rounded-lg transition-all duration-200`}>
-            <Bell className="h-5 w-5" />
-            <span className={`absolute -top-1 -right-1 block h-3 w-3 rounded-full ${
-              isDark 
-                ? 'bg-purple-500' 
-                : 'bg-brand-primary-500'
-            }`}></span>
-          </button>
-          
           {/* Logout - Hidden on mobile */}
           <button
             onClick={logout}
@@ -249,22 +235,13 @@ export const Header: React.FC = () => {
             </div>
             
             <div className="flex items-center space-x-2 px-3">
-              <button className={`flex items-center p-2 ${
-                isDark 
-                  ? 'text-gray-400 hover:text-white hover:bg-gray-800' 
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              } rounded-lg transition-all duration-200 flex-1`}>
-                <Bell className="h-4 w-4 mr-2" />
-                Notifications
-              </button>
-              
               <button
                 onClick={logout}
                 className={`flex items-center p-2 ${
                   isDark 
                     ? 'text-gray-400 hover:text-red-400 hover:bg-gray-800' 
                     : 'text-gray-600 hover:text-red-500 hover:bg-gray-100'
-                } rounded-lg transition-all duration-200 flex-1`}
+                } rounded-lg transition-all duration-200 w-full`}
               >
                 <LogOut className="h-4 w-4 mr-2" />
                 Sign out
