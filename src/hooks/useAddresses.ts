@@ -109,6 +109,16 @@ export const useAddresses = () => {
     }
   };
 
+  const deleteAddresses = async (encryptedIds: string[]) => {
+    try {
+      await addressService.deleteAddresses(encryptedIds);
+      // Refresh the current page after deletion
+      await fetchAddresses(currentPage);
+    } catch (err) {
+      throw err;
+    }
+  };
+
   const importAddresses = async (file: File) => {
     try {
       const response = await addressService.importAddresses(file);
@@ -146,6 +156,7 @@ export const useAddresses = () => {
     createAddress,
     updateAddress,
     deleteAddress,
+    deleteAddresses,
     importAddresses
   };
 };

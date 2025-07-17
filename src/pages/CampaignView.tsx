@@ -629,7 +629,7 @@ export const CampaignView: React.FC = () => {
                       : 'border-gray-200 bg-gray-50'
                   }`}
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex-1">
                       <h4 className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         {campaignAddress.address.name}
@@ -642,6 +642,118 @@ export const CampaignView: React.FC = () => {
                       {getAddressStatusText(campaignAddress.status, campaignAddress.failure_reason)}
                     </div>
                   </div>
+                  
+                  {/* Payee Information */}
+                  {campaignAddress.address.payee && (
+                    <div className={`mt-3 p-3 rounded-lg ${
+                      isDark ? 'bg-green-900/20 border border-green-800/30' : 'bg-green-50 border border-green-200'
+                    }`}>
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <CheckCircle className={`h-4 w-4 flex-shrink-0 ${
+                            isDark ? 'text-green-400' : 'text-green-600'
+                          }`} />
+                          <h5 className={`text-sm font-medium ${
+                            isDark ? 'text-green-400' : 'text-green-800'
+                          }`}>
+                            Payee Information
+                          </h5>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                          <div>
+                            <span className={`font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                              Name:
+                            </span>
+                            <span className={`ml-2 ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
+                              {campaignAddress.address.payee.payee_name}
+                            </span>
+                          </div>
+                          <div>
+                            <span className={`font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                              Email:
+                            </span>
+                            <span className={`ml-2 ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
+                              {campaignAddress.address.payee.payee_email || 'N/A'}
+                            </span>
+                          </div>
+                          <div>
+                            <span className={`font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                              Phone:
+                            </span>
+                            <span className={`ml-2 ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
+                              {campaignAddress.address.payee.payee_phone || 'N/A'}
+                            </span>
+                          </div>
+                          <div>
+                            <span className={`font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                              Address:
+                            </span>
+                            <span className={`ml-2 ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
+                              {campaignAddress.address.payee.payee_address_line_1}
+                            </span>
+                          </div>
+                          <div>
+                            <span className={`font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                              City:
+                            </span>
+                            <span className={`ml-2 ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
+                              {campaignAddress.address.payee.payee_city}
+                            </span>
+                          </div>
+                          <div>
+                            <span className={`font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                              State:
+                            </span>
+                            <span className={`ml-2 ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
+                              {campaignAddress.address.payee.payee_state}
+                            </span>
+                          </div>
+                          <div>
+                            <span className={`font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                              ZIP:
+                            </span>
+                            <span className={`ml-2 ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
+                              {campaignAddress.address.payee.payee_zip}
+                            </span>
+                          </div>
+                          <div>
+                            <span className={`font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                              Country:
+                            </span>
+                            <span className={`ml-2 ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
+                              {campaignAddress.address.payee.payee_country}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* No Payee Information */}
+                  {!campaignAddress.address.payee && (
+                    <div className={`mt-3 p-3 rounded-lg ${
+                      isDark ? 'bg-yellow-900/20 border border-yellow-800/30' : 'bg-yellow-50 border border-yellow-200'
+                    }`}>
+                      <div className="flex items-center space-x-2">
+                        <AlertCircle className={`h-4 w-4 flex-shrink-0 ${
+                          isDark ? 'text-yellow-400' : 'text-yellow-600'
+                        }`} />
+                        <div>
+                          <p className={`text-sm font-medium ${
+                            isDark ? 'text-yellow-400' : 'text-yellow-800'
+                          }`}>
+                            No Payee Information Available
+                          </p>
+                          <p className={`text-sm mt-1 ${
+                            isDark ? 'text-yellow-300' : 'text-yellow-700'
+                          }`}>
+                            This address does not have associated payee details.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   {campaignAddress.failure_reason && (
                     <div className={`mt-3 p-3 rounded-lg ${
                       isDark ? 'bg-red-900/20 border border-red-800/30' : 'bg-red-50 border border-red-200'
