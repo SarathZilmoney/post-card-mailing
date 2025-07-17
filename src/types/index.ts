@@ -175,6 +175,18 @@ export interface ImportAddressesResponse {
 }
 
 // New types for detailed campaign view
+export interface Payee {
+  id: number;
+  payee_name: string;
+  payee_email: string;
+  payee_address_line_1: string;
+  payee_city: string;
+  payee_state: string;
+  payee_zip: string;
+  payee_country: string;
+  payee_phone: string;
+}
+
 export interface CampaignAddress {
   id: number;
   campaign_id: number;
@@ -185,7 +197,7 @@ export interface CampaignAddress {
     id: number;
     name: string;
     payee_id: number | null;
-    payee: any | null;
+    payee: Payee | null;
   };
 }
 

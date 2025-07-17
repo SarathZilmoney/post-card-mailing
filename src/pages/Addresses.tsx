@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Upload, Eye, Trash2, User, MailIcon, Star, MapPin, Phone, Globe, AlertCircle, ChevronUp, Clock, ExternalLink, ChevronLeft, ChevronRight, ChevronDown, Filter } from 'lucide-react';
+import { Search, Upload, Eye, Trash2, User, MailIcon, Star, MapPin, Phone, Globe, AlertCircle, ChevronUp, Clock, ExternalLink, ChevronLeft, ChevronRight, ChevronDown, Filter, CheckSquare, Square } from 'lucide-react';
 import { useAddresses } from '../hooks/useAddresses';
 import { useTheme } from '../context/ThemeContext';
 import { useNavigate } from 'react-router-dom';
@@ -28,6 +28,7 @@ export const Addresses: React.FC = () => {
     goToNextPage, 
     goToPreviousPage, 
     deleteAddress, 
+    deleteAddresses,
     importAddresses, 
     refetch 
   } = useAddresses();
@@ -36,6 +37,8 @@ export const Addresses: React.FC = () => {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const [categories, setCategories] = useState<AddressCategory[]>([]);
+  const [selectedAddresses, setSelectedAddresses] = useState<Set<string>>(new Set());
+  const [selectAll, setSelectAll] = useState(false);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -112,6 +115,85 @@ export const Addresses: React.FC = () => {
         }
       }
     );
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedAddresses.size === 0) return;
+
+    const selectedNames = addresses
+      .filter(addr => selectedAddresses.has(addr.encrypted_id))
+      .map(addr => addr.name);
+
+    const message = selectedAddresses.size === 1 
+      ? `Are you sure you want to delete "${selectedNames[0]}"? This action cannot be undone.`
+      : `Are you sure you want to delete ${selectedAddresses.size} addresses? This action cannot be undone.`;
+
+    alertService.warning(message, {
+      title: 'Delete Addresses',
+      confirmText: `Delete ${selectedAddresses.size} Address${selectedAddresses.size > 1 ? 'es' : ''}`,
+      cancelText: 'Cancel',
+      onConfirm: async () => {
+        try {
+          await deleteAddresses(Array.from(selectedAddresses));
+          
+          // Clear selection
+          setSelectedAddresses(new Set());
+          setSelectAll(false);
+          
+          // Show success alert
+          alertService.success(`${selectedAddresses.size} address${selectedAddresses.size > 1 ? 'es' : ''} deleted successfully`, {
+            title: 'Addresses Deleted',
+            duration: 3000
+          });
+          
+          // Show toast notification as well
+          toast.success(`${selectedAddresses.size} address${selectedAddresses.size > 1 ? 'es' : ''} deleted successfully`);
+          
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to delete addresses';
+          
+          // Show error alert
+          alertService.error(errorMessage, {
+            title: 'Delete Failed',
+            duration: 3000
+          });
+          
+          // Show toast notification as well
+          toast.error(errorMessage);
+        }
+      },
+      onCancel: () => {
+        // Do nothing on cancel
+      }
+    });
+  };
+
+  const handleSelectAddress = (encryptedId: string) => {
+    setSelectedAddresses(prev => {
+      const newSelected = new Set(prev);
+      if (newSelected.has(encryptedId)) {
+        newSelected.delete(encryptedId);
+      } else {
+        newSelected.add(encryptedId);
+      }
+      return newSelected;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedAddresses(new Set());
+      setSelectAll(false);
+    } else {
+      const allIds = addresses.map(addr => addr.encrypted_id);
+      setSelectedAddresses(new Set(allIds));
+      setSelectAll(true);
+    }
+  };
+
+  const clearSelection = () => {
+    setSelectedAddresses(new Set());
+    setSelectAll(false);
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -254,7 +336,7 @@ export const Addresses: React.FC = () => {
       <tr key={`${address.encrypted_id}-expanded`} className={`${
         isDark ? 'bg-dark-900/50' : 'bg-gray-50/50'
       } border-t-0 animate-slideDown`}>
-        <td colSpan={8} className="px-3 sm:px-6 py-6 animate-fadeIn min-w-0 w-full">
+        <td colSpan={9} className="px-3 sm:px-6 py-6 animate-fadeIn min-w-0 w-full">
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 w-full max-w-none">
             {/* Location Details */}
             <div className={`${
@@ -491,6 +573,17 @@ export const Addresses: React.FC = () => {
     );
   };
 
+  // Update selectAll state when addresses change
+  useEffect(() => {
+    if (addresses.length === 0) {
+      setSelectAll(false);
+      setSelectedAddresses(new Set());
+    } else {
+      const allSelected = addresses.every(addr => selectedAddresses.has(addr.encrypted_id));
+      setSelectAll(allSelected);
+    }
+  }, [addresses, selectedAddresses]);
+
   // Load categories for filtering
   useEffect(() => {
     const loadCategories = async () => {
@@ -653,6 +746,42 @@ export const Addresses: React.FC = () => {
             )}
           </div>
           
+          {/* Bulk Actions */}
+          {selectedAddresses.size > 0 && (
+            <div className={`mt-4 p-3 rounded-lg ${
+              isDark ? 'bg-purple-900/20 border border-purple-800/30' : 'bg-purple-50 border border-purple-200'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <span className={`text-sm font-medium ${
+                    isDark ? 'text-purple-300' : 'text-purple-800'
+                  }`}>
+                    {selectedAddresses.size} address{selectedAddresses.size > 1 ? 'es' : ''} selected
+                  </span>
+                  <button
+                    onClick={clearSelection}
+                    className={`text-xs ${
+                      isDark ? 'text-purple-400 hover:text-purple-300' : 'text-purple-600 hover:text-purple-700'
+                    } hover:underline transition-colors`}
+                  >
+                    Clear selection
+                  </button>
+                </div>
+                <button
+                  onClick={handleBulkDelete}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-lg flex items-center space-x-2 ${
+                    isDark 
+                      ? 'bg-red-600 hover:bg-red-700 text-white' 
+                      : 'bg-red-600 hover:bg-red-700 text-white'
+                  } transition-colors`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span>Delete Selected</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Per Page Selector */}
           <div className="flex items-center justify-between mt-4">
             <div className="flex items-center space-x-2">
@@ -701,6 +830,25 @@ export const Addresses: React.FC = () => {
                   isDark ? 'bg-dark-800/50' : 'bg-gray-50'
                 }`}>
                   <tr>
+                    <th className={`px-2 sm:px-3 py-3 text-left text-xs font-medium ${
+                      isDark ? 'text-gray-300' : 'text-gray-500'
+                    } uppercase tracking-wider w-12`}>
+                      <button
+                        onClick={handleSelectAll}
+                        className={`p-1 rounded transition-colors ${
+                          isDark 
+                            ? 'text-gray-400 hover:text-purple-400 hover:bg-dark-800/50' 
+                            : 'text-gray-500 hover:text-purple-500 hover:bg-gray-100'
+                        }`}
+                        title={selectAll ? 'Deselect all' : 'Select all'}
+                      >
+                        {selectAll ? (
+                          <CheckSquare className="h-4 w-4" />
+                        ) : (
+                          <Square className="h-4 w-4" />
+                        )}
+                      </button>
+                    </th>
                     <th className={`px-2 sm:px-4 py-3 text-left text-xs font-medium ${
                       isDark ? 'text-gray-300' : 'text-gray-500'
                     } uppercase tracking-wider w-32 sm:w-40`}>
@@ -813,7 +961,26 @@ export const Addresses: React.FC = () => {
                         isDark ? 'hover:bg-dark-800/30' : 'hover:bg-gray-50'
                       } transition-colors ${
                         expandedRows.has(address.encrypted_id) ? (isDark ? 'bg-dark-800/20' : 'bg-gray-50/50') : ''
+                      } ${
+                        selectedAddresses.has(address.encrypted_id) ? (isDark ? 'bg-purple-900/20 border-l-4 border-l-purple-500' : 'bg-purple-50 border-l-4 border-l-purple-500') : ''
                       }`}>
+                        <td className="px-2 sm:px-3 py-4 w-12">
+                          <button
+                            onClick={() => handleSelectAddress(address.encrypted_id)}
+                            className={`p-1 rounded transition-colors ${
+                              isDark 
+                                ? 'text-gray-400 hover:text-purple-400 hover:bg-dark-800/50' 
+                                : 'text-gray-500 hover:text-purple-500 hover:bg-gray-100'
+                            }`}
+                            title={selectedAddresses.has(address.encrypted_id) ? 'Deselect' : 'Select'}
+                          >
+                            {selectedAddresses.has(address.encrypted_id) ? (
+                              <CheckSquare className="h-4 w-4" />
+                            ) : (
+                              <Square className="h-4 w-4" />
+                            )}
+                          </button>
+                        </td>
                         <td className="px-2 sm:px-4 py-4 w-32 sm:w-40">
                           <div className={`text-sm font-medium truncate ${
                             isDark ? 'text-white' : 'text-gray-900'
