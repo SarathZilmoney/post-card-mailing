@@ -798,7 +798,7 @@ export const Addresses: React.FC = () => {
                     ? 'bg-dark-800/50 border-dark-600 text-white' 
                     : 'bg-white border-gray-300 text-gray-900'
                 }`}
-              >
+              > 
                 <option value={10}>10</option>
                 <option value={20}>20</option>
                 <option value={50}>50</option>
