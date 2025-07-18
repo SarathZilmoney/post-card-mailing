@@ -825,8 +825,10 @@ export const Addresses: React.FC = () => {
         {addresses && addresses.length > 0 ? (
           <>
             <div className="w-full">
-              <table className="w-full table-auto">
-                <thead className={`${
+              {/* Calculate max height for 20 addresses: approximately 20 * 80px (row height) + header height */}
+              <div className="max-h-[800px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 dark:scrollbar-thumb-gray-600 dark:scrollbar-track-gray-800">
+                <table className="w-full table-auto">
+                <thead className={`sticky top-0 z-10 ${
                   isDark ? 'bg-dark-800/50' : 'bg-gray-50'
                 }`}>
                   <tr>
@@ -1105,6 +1107,7 @@ export const Addresses: React.FC = () => {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
             {renderPagination()}
           </>

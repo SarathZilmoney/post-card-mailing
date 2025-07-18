@@ -18,7 +18,9 @@ import {
   Loader2,
   Trash2,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAlert } from '../context/AlertContext';
@@ -43,6 +45,9 @@ export const CampaignView: React.FC = () => {
   // Pagination state for addresses
   const [currentPage, setCurrentPage] = useState(1);
   const [addressesPerPage, setAddressesPerPage] = useState(10);
+  
+  // State to track which addresses are expanded
+  const [expandedAddresses, setExpandedAddresses] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     if (encryptedId) {
@@ -209,6 +214,18 @@ export const CampaignView: React.FC = () => {
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+  };
+
+  const toggleAddressExpansion = (addressId: number) => {
+    setExpandedAddresses(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(addressId)) {
+        newSet.delete(addressId);
+      } else {
+        newSet.add(addressId);
+      }
+      return newSet;
+    });
   };
 
   const Pagination = () => {
@@ -556,14 +573,6 @@ export const CampaignView: React.FC = () => {
               </div>
               <div>
                 <label className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  End Date
-                </label>
-                <p className={`mt-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  {campaign.end_date ? new Date(campaign.end_date).toLocaleDateString() : 'Not set'}
-                </p>
-              </div>
-              <div>
-                <label className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                   Next Scheduled Run
                 </label>
                 <p className={`mt-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -629,7 +638,10 @@ export const CampaignView: React.FC = () => {
                       : 'border-gray-200 bg-gray-50'
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-3">
+                  <div 
+                    className="flex items-center justify-between mb-3 cursor-pointer"
+                    onClick={() => toggleAddressExpansion(campaignAddress.id)}
+                  >
                     <div className="flex-1">
                       <h4 className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         {campaignAddress.address.name}
@@ -638,13 +650,20 @@ export const CampaignView: React.FC = () => {
                         ID: {campaignAddress.address_id}
                       </p>
                     </div>
-                    <div className={`px-3 py-1 rounded-full text-xs font-medium ${getAddressStatusColor(campaignAddress.status, campaignAddress.failure_reason)}`}>
-                      {getAddressStatusText(campaignAddress.status, campaignAddress.failure_reason)}
+                    <div className="flex items-center space-x-3">
+                      <div className={`px-3 py-1 rounded-full text-xs font-medium ${getAddressStatusColor(campaignAddress.status, campaignAddress.failure_reason)}`}>
+                        {getAddressStatusText(campaignAddress.status, campaignAddress.failure_reason)}
+                      </div>
+                      {expandedAddresses.has(campaignAddress.id) ? (
+                        <ChevronUp className={`h-4 w-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
+                      ) : (
+                        <ChevronDown className={`h-4 w-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
+                      )}
                     </div>
                   </div>
                   
-                  {/* Payee Information */}
-                  {campaignAddress.address.payee && (
+                  {/* Payee Information - Only show when expanded */}
+                  {expandedAddresses.has(campaignAddress.id) && campaignAddress.address.payee && (
                     <div className={`mt-3 p-3 rounded-lg ${
                       isDark ? 'bg-green-900/20 border border-green-800/30' : 'bg-green-50 border border-green-200'
                     }`}>
@@ -729,8 +748,8 @@ export const CampaignView: React.FC = () => {
                     </div>
                   )}
                   
-                  {/* No Payee Information */}
-                  {!campaignAddress.address.payee && (
+                  {/* No Payee Information - Only show when expanded */}
+                  {expandedAddresses.has(campaignAddress.id) && !campaignAddress.address.payee && (
                     <div className={`mt-3 p-3 rounded-lg ${
                       isDark ? 'bg-yellow-900/20 border border-yellow-800/30' : 'bg-yellow-50 border border-yellow-200'
                     }`}>
@@ -754,7 +773,8 @@ export const CampaignView: React.FC = () => {
                     </div>
                   )}
                   
-                  {campaignAddress.failure_reason && (
+                  {/* Failure Reason - Only show when expanded */}
+                  {expandedAddresses.has(campaignAddress.id) && campaignAddress.failure_reason && (
                     <div className={`mt-3 p-3 rounded-lg ${
                       isDark ? 'bg-red-900/20 border border-red-800/30' : 'bg-red-50 border border-red-200'
                     }`}>
