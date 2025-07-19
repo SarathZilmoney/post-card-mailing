@@ -29,6 +29,53 @@ import { DetailedCampaign } from '../types';
 import { formatRelativeTime } from '../utils/dateUtils';
 import toast from 'react-hot-toast';
 
+/**
+ * Utility functions to handle flexible address formats in campaign responses.
+ * 
+ * The API can return addresses in two formats:
+ * 1. Nested format (current): { address_id: 123, address: { name: "Company", city: "NYC", payee: {...} } }
+ * 2. Flat format (fallback): { id: 123, name: "Company", city: "NYC", payee: {...} }
+ * 
+ * These utilities normalize both formats to a consistent structure.
+ */
+
+// Utility functions to handle both nested and flat address formats
+const getAddressData = (campaignAddress: any) => {
+  // If address is nested (current format)
+  if (campaignAddress.address) {
+    return {
+      id: campaignAddress.address.id,
+      name: campaignAddress.address.name,
+      address_line_1: campaignAddress.address.address_line_1,
+      city: campaignAddress.address.city,
+      state: campaignAddress.address.state,
+      postal_code: campaignAddress.address.postal_code,
+      country: campaignAddress.address.country,
+      phone: campaignAddress.address.phone,
+      email: campaignAddress.address.email,
+      payee: campaignAddress.address.payee
+    };
+  }
+  
+  // If address data is at root level (fallback format)
+  return {
+    id: campaignAddress.id,
+    name: campaignAddress.name,
+    address_line_1: campaignAddress.address_line_1,
+    city: campaignAddress.city,
+    state: campaignAddress.state,
+    postal_code: campaignAddress.postal_code,
+    country: campaignAddress.country,
+    phone: campaignAddress.phone,
+    email: campaignAddress.email,
+    payee: campaignAddress.payee
+  };
+};
+
+const getCampaignAddressId = (campaignAddress: any) => {
+  return campaignAddress.address_id || campaignAddress.id;
+};
+
 export const CampaignView: React.FC = () => {
   const { encryptedId } = useParams<{ encryptedId: string }>();
   const navigate = useNavigate();
@@ -507,10 +554,10 @@ export const CampaignView: React.FC = () => {
               <dl>
                 <dt className={`text-sm font-medium ${
                   isDark ? 'text-gray-400' : 'text-light-600'
-                } truncate`}>Run Count</dt>
+                } truncate`}>Execution Count</dt>
                 <dd className={`text-2xl font-semibold ${
                   isDark ? 'text-white' : 'text-light-900'
-                }`}>{campaign.run_count}</dd>
+                }`}>{campaign.execution_count}</dd>
               </dl>
             </div>
           </div>
@@ -667,7 +714,11 @@ export const CampaignView: React.FC = () => {
               </div>
             </div>
             <div className="space-y-3 max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 dark:scrollbar-thumb-gray-600 dark:scrollbar-track-gray-800">
-              {currentAddresses.map((campaignAddress) => (
+              {currentAddresses.map((campaignAddress) => {
+                const addressData = getAddressData(campaignAddress);
+                const addressId = getCampaignAddressId(campaignAddress);
+                
+                return (
                 <div
                   key={campaignAddress.id}
                   className={`p-4 rounded-lg border ${
@@ -682,15 +733,15 @@ export const CampaignView: React.FC = () => {
                   >
                     <div className="flex-1">
                       <h4 className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                        {campaignAddress.address.name}
+                        {addressData.name}
                       </h4>
                       <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                        ID: {campaignAddress.address_id}
+                        ID: {addressId}
                       </p>
                     </div>
                     <div className="flex items-center space-x-3">
-                      <div className={`px-3 py-1 rounded-full text-xs font-medium ${getAddressStatusColor(campaignAddress.status, campaignAddress.failure_reason)}`}>
-                        {getAddressStatusText(campaignAddress.status, campaignAddress.failure_reason)}
+                      <div className={`px-3 py-1 rounded-full text-xs font-medium ${getAddressStatusColor(campaignAddress.status, campaignAddress.failure_reason || null)}`}>
+                        {getAddressStatusText(campaignAddress.status, campaignAddress.failure_reason || null)}
                       </div>
                       {expandedAddresses.has(campaignAddress.id) ? (
                         <ChevronUp className={`h-4 w-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
@@ -701,7 +752,7 @@ export const CampaignView: React.FC = () => {
                   </div>
                   
                   {/* Payee Information - Only show when expanded */}
-                  {expandedAddresses.has(campaignAddress.id) && campaignAddress.address.payee && (
+                  {expandedAddresses.has(campaignAddress.id) && addressData.payee && (
                     <div className={`mt-3 p-3 rounded-lg ${
                       isDark ? 'bg-green-900/20 border border-green-800/30' : 'bg-green-50 border border-green-200'
                     }`}>
@@ -722,7 +773,7 @@ export const CampaignView: React.FC = () => {
                               Name:
                             </span>
                             <span className={`ml-2 ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
-                              {campaignAddress.address.payee.payee_name}
+                              {addressData.payee?.payee_name}
                             </span>
                           </div>
                           <div>
@@ -730,7 +781,7 @@ export const CampaignView: React.FC = () => {
                               Email:
                             </span>
                             <span className={`ml-2 ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
-                              {campaignAddress.address.payee.payee_email || 'N/A'}
+                              {addressData.payee?.payee_email || 'N/A'}
                             </span>
                           </div>
                           <div>
@@ -738,7 +789,7 @@ export const CampaignView: React.FC = () => {
                               Phone:
                             </span>
                             <span className={`ml-2 ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
-                              {campaignAddress.address.payee.payee_phone || 'N/A'}
+                              {addressData.payee?.payee_phone || 'N/A'}
                             </span>
                           </div>
                           <div>
@@ -746,7 +797,7 @@ export const CampaignView: React.FC = () => {
                               Address:
                             </span>
                             <span className={`ml-2 ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
-                              {campaignAddress.address.payee.payee_address_line_1}
+                              {addressData.payee?.payee_address_line_1}
                             </span>
                           </div>
                           <div>
@@ -754,7 +805,7 @@ export const CampaignView: React.FC = () => {
                               City:
                             </span>
                             <span className={`ml-2 ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
-                              {campaignAddress.address.payee.payee_city}
+                              {addressData.payee?.payee_city}
                             </span>
                           </div>
                           <div>
@@ -762,7 +813,7 @@ export const CampaignView: React.FC = () => {
                               State:
                             </span>
                             <span className={`ml-2 ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
-                              {campaignAddress.address.payee.payee_state}
+                              {addressData.payee?.payee_state}
                             </span>
                           </div>
                           <div>
@@ -770,7 +821,7 @@ export const CampaignView: React.FC = () => {
                               ZIP:
                             </span>
                             <span className={`ml-2 ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
-                              {campaignAddress.address.payee.payee_zip}
+                              {addressData.payee?.payee_zip}
                             </span>
                           </div>
                           <div>
@@ -778,7 +829,7 @@ export const CampaignView: React.FC = () => {
                               Country:
                             </span>
                             <span className={`ml-2 ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
-                              {campaignAddress.address.payee.payee_country}
+                              {addressData.payee?.payee_country}
                             </span>
                           </div>
                         </div>
@@ -786,8 +837,100 @@ export const CampaignView: React.FC = () => {
                     </div>
                   )}
                   
+                  {/* Address Details - Only show when expanded */}
+                  {expandedAddresses.has(campaignAddress.id) && (
+                    <div className={`mt-3 p-3 rounded-lg ${
+                      isDark ? 'bg-blue-900/20 border border-blue-800/30' : 'bg-blue-50 border border-blue-200'
+                    }`}>
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <Mail className={`h-4 w-4 flex-shrink-0 ${
+                            isDark ? 'text-blue-400' : 'text-blue-600'
+                          }`} />
+                          <h5 className={`text-sm font-medium ${
+                            isDark ? 'text-blue-400' : 'text-blue-800'
+                          }`}>
+                            Address Details
+                          </h5>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                          {addressData.address_line_1 && (
+                            <div>
+                              <span className={`font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                                Address:
+                              </span>
+                              <span className={`ml-2 ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
+                                {addressData.address_line_1}
+                              </span>
+                            </div>
+                          )}
+                          {addressData.city && (
+                            <div>
+                              <span className={`font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                                City:
+                              </span>
+                              <span className={`ml-2 ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
+                                {addressData.city}
+                              </span>
+                            </div>
+                          )}
+                          {addressData.state && (
+                            <div>
+                              <span className={`font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                                State:
+                              </span>
+                              <span className={`ml-2 ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
+                                {addressData.state}
+                              </span>
+                            </div>
+                          )}
+                          {addressData.postal_code && (
+                            <div>
+                              <span className={`font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                                ZIP:
+                              </span>
+                              <span className={`ml-2 ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
+                                {addressData.postal_code}
+                              </span>
+                            </div>
+                          )}
+                          {addressData.country && (
+                            <div>
+                              <span className={`font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                                Country:
+                              </span>
+                              <span className={`ml-2 ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
+                                {addressData.country}
+                              </span>
+                            </div>
+                          )}
+                          {addressData.phone && (
+                            <div>
+                              <span className={`font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                                Phone:
+                              </span>
+                              <span className={`ml-2 ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
+                                {addressData.phone}
+                              </span>
+                            </div>
+                          )}
+                          {addressData.email && (
+                            <div>
+                              <span className={`font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                                Email:
+                              </span>
+                              <span className={`ml-2 ${isDark ? 'text-gray-300' : 'text-gray-900'}`}>
+                                {addressData.email}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* No Payee Information - Only show when expanded */}
-                  {expandedAddresses.has(campaignAddress.id) && !campaignAddress.address.payee && (
+                  {expandedAddresses.has(campaignAddress.id) && !addressData.payee && (
                     <div className={`mt-3 p-3 rounded-lg ${
                       isDark ? 'bg-yellow-900/20 border border-yellow-800/30' : 'bg-yellow-50 border border-yellow-200'
                     }`}>
@@ -836,7 +979,8 @@ export const CampaignView: React.FC = () => {
                     </div>
                   )}
                 </div>
-              ))}
+                );
+              })}
             </div>
             
             {/* Pagination */}
@@ -883,7 +1027,7 @@ export const CampaignView: React.FC = () => {
                 </button>
                 
                 {/* Retry button - only show after first run and before max runs */}
-                {campaign.run_count > 0 && campaign.run_count < 3 && (
+                {campaign.execution_count > 0 && campaign.execution_count < 3 && (
                   <button
                     onClick={handleRetryCampaign}
                     disabled={isRetrying}

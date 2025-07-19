@@ -201,6 +201,42 @@ export interface CampaignAddress {
   };
 }
 
+// Flexible campaign address that supports both nested and flat formats
+export interface FlexibleCampaignAddress {
+  id: number;
+  campaign_id?: number;
+  address_id?: number;
+  status: number;
+  failure_reason?: string | null;
+  
+  // Nested format (current)
+  address?: {
+    id: number;
+    name: string;
+    address_line_1?: string;
+    city?: string;
+    state?: string;
+    postal_code?: string;
+    country?: string;
+    phone?: string;
+    email?: string;
+    payee_id?: number | null;
+    payee?: Payee | null;
+  };
+  
+  // Flat format (fallback) - address data directly on the object
+  name?: string;
+  address_line_1?: string;
+  city?: string;
+  state?: string;
+  postal_code?: string;
+  country?: string;
+  phone?: string;
+  email?: string;
+  payee_id?: number | null;
+  payee?: Payee | null;
+}
+
 export interface CampaignAttachment {
   id: number;
   attachable_id: number;
@@ -234,14 +270,14 @@ export interface DetailedCampaign {
   file_path: string | null;
   cycle_duration_days: number;
   sends_per_cycle: number;
-  run_count: number;
+  execution_count: number;
   next_scheduled_run_at: string | null;
   created_by: number;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
   category: CampaignCategory;
-  addresses: CampaignAddress[];
+  addresses: FlexibleCampaignAddress[];
   attachments: CampaignAttachment[];
 }
 
