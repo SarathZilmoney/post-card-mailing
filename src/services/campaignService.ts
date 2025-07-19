@@ -399,6 +399,60 @@ class CampaignService {
     }
   }
 
+  async retryCampaign(encryptedId: string): Promise<{success: boolean, message: string, campaign?: Campaign}> {
+    try {
+      // Validate required fields
+      if (!encryptedId) {
+        throw new Error('Campaign encrypted ID is required');
+      }
+      
+      // Prepare the payload for the backend API
+      const payload = {
+        campaignId: encryptedId
+      };
+      
+      // Log payload for debugging in development
+      if (import.meta.env.DEV) {
+        console.log('Retry campaign payload being sent:', payload);
+      }
+      
+      // Make API call to the retry endpoint
+      const response = await httpService.post('/sua/postal-cards/retry-postal-card', payload) as {success: boolean, message: string, campaign?: Record<string, unknown>};
+      
+      // Handle the response format
+      if (response.success) {
+        // Map the returned campaign data if available
+        const campaign = response.campaign ? this.mapBackendCampaignToFrontend(response.campaign) : undefined;
+        
+        return {
+          success: true,
+          message: response.message || 'Campaign retry started successfully!',
+          campaign
+        };
+      } else {
+        throw new Error(response.message || 'Failed to retry campaign');
+      }
+    } catch (error) {
+      // Enhanced error handling for different response codes
+      if (error instanceof Error) {
+        if (error.message.includes('422') || error.message.includes('Unprocessable')) {
+          throw new Error('Invalid campaign data. Please check the campaign configuration and try again.');
+        }
+        if (error.message.includes('404')) {
+          throw new Error('Campaign not found. Please refresh the page and try again.');
+        }
+        if (error.message.includes('400')) {
+          throw new Error('Campaign cannot be retried. Please check if the campaign is properly configured.');
+        }
+        if (error.message.includes('500')) {
+          throw new Error('Server error occurred while retrying the campaign. Please try again later.');
+        }
+      }
+      
+      throw error;
+    }
+  }
+
   async getRunHistory(encryptedId: string): Promise<CampaignRun[]> {
     try {
       const response = await httpService.get(`/sua/postal-cards/campaign-runs/${encryptedId}`) as {success: boolean, data: any[]};
