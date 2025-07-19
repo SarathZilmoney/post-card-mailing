@@ -59,27 +59,27 @@ class CampaignService {
     const categoryName = backendCampaign.category as string | undefined;
 
     // Handle run tracking with new backend fields
-    const runCount = (backendCampaign.run_count as number) || 0;
+    const executionCount = (backendCampaign.execution_count as number) || 0;
     const maxRuns = 3; // Fixed to 3 runs as per requirements
     const nextScheduledRunAt = backendCampaign.next_scheduled_run_at as string | null;
     
-    // Calculate run status based on run_count - CAP AT MAXIMUM 3 RUNS
-    const currentRun = Math.min(runCount, maxRuns); // Cap at maxRuns
-    const totalRuns = Math.min(runCount, maxRuns); // Cap at maxRuns
+    // Calculate run status based on execution_count - CAP AT MAXIMUM 3 RUNS
+    const currentRun = Math.min(executionCount, maxRuns); // Cap at maxRuns
+    const totalRuns = Math.min(executionCount, maxRuns); // Cap at maxRuns
     const canRunAgain = currentRun < maxRuns;
     const nextRunAvailable = canRunAgain;
     
-    // Create run history based on run_count (placeholder data since we don't have detailed run history)
+    // Create run history based on execution_count (placeholder data since we don't have detailed run history)
     // Only create history for runs up to maxRuns
     const runHistory: CampaignRun[] = [];
-    for (let i = 1; i <= Math.min(runCount, maxRuns); i++) {
+    for (let i = 1; i <= Math.min(executionCount, maxRuns); i++) {
       runHistory.push({
         runNumber: i,
         startedAt: new Date().toISOString(), // Placeholder - would need actual data from backend
         completedAt: new Date().toISOString(), // Placeholder - would need actual data from backend
         status: 'completed',
-        sentCount: Math.floor(sentCount / Math.min(runCount, maxRuns)), // Distribute sent count across runs
-        deliveredCount: Math.floor(sentCount / Math.min(runCount, maxRuns)), // Assume delivered = sent for now
+        sentCount: Math.floor(sentCount / Math.min(executionCount, maxRuns)), // Distribute sent count across runs
+        deliveredCount: Math.floor(sentCount / Math.min(executionCount, maxRuns)), // Assume delivered = sent for now
         returnedCount: 0, // Placeholder - would need actual data from backend
         errorMessage: undefined
       });
