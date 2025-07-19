@@ -1026,8 +1026,8 @@ export const CampaignView: React.FC = () => {
                   <span>{isRunning ? 'Starting...' : 'Run Campaign'}</span>
                 </button>
                 
-                {/* Retry button - only show after first run and before max runs */}
-                {campaign.execution_count > 0 && campaign.execution_count < 3 && (
+                {/* Retry button - show when addresses exist or execution count > 0, and before max runs */}
+                {(campaign.addresses.length > 0 || campaign.execution_count > 0) && campaign.execution_count < 3 && (
                   <button
                     onClick={handleRetryCampaign}
                     disabled={isRetrying}
