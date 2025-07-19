@@ -85,6 +85,24 @@ export const useCampaigns = () => {
     }
   };
 
+  const retryCampaign = async (encryptedId: string): Promise<{success: boolean, message: string, campaign?: Campaign}> => {
+    try {
+      const response = await campaignService.retryCampaign(encryptedId);
+      
+      // If the campaign object is returned, update the local state
+      if (response.campaign) {
+        setCampaigns(prev => prev.map(c => c.encrypted_id === encryptedId ? response.campaign! : c));
+      } else {
+        // If no campaign object is returned, just refetch the campaigns to get the updated status
+        await fetchCampaigns(false);
+      }
+      
+      return response;
+    } catch (err) {
+      throw err;
+    }
+  };
+
   const stopCampaign = async (encryptedId: string) => {
     try {
       const updatedCampaign = await campaignService.stopCampaign(encryptedId);
@@ -125,6 +143,7 @@ export const useCampaigns = () => {
     updateCampaign,
     deleteCampaign,
     runCampaign,
+    retryCampaign,
     stopCampaign,
     getRunHistory,
     getCampaign

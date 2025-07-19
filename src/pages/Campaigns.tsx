@@ -12,7 +12,7 @@ import { formatRelativeTime, debugDateInfo } from '../utils/dateUtils';
 import { useNavigate } from 'react-router-dom';
 
 export const Campaigns: React.FC = () => {
-  const { campaigns, loading, deleteCampaign, updateCampaign, runCampaign, stopCampaign, refetch, getRunHistory } = useCampaigns();
+  const { campaigns, loading, deleteCampaign, updateCampaign, runCampaign, retryCampaign, stopCampaign, refetch, getRunHistory } = useCampaigns();
   const { isDark } = useTheme();
   const alert = useAlert();
   const navigate = useNavigate();
@@ -136,6 +136,63 @@ export const Campaigns: React.FC = () => {
           toast.error(errorMessage);
           alert.error(errorMessage, {
             title: 'Campaign Start Failed',
+            duration: 5000
+          });
+        }
+      },
+      onCancel: () => {
+        // Do nothing on cancel
+      }
+    });
+  };
+
+  const handleRetryCampaign = async (encryptedId: string, campaignName: string) => {
+    const campaign = campaigns.find(c => c.encrypted_id === encryptedId);
+    if (!campaign) return;
+
+    // Check if campaign can be retried (after first run and before max runs)
+    if (campaign.currentRun === 0 || campaign.currentRun >= campaign.maxRuns) {
+      alert.error('This campaign cannot be retried at this time', {
+        title: 'Retry Not Available',
+        duration: 5000
+      });
+      return;
+    }
+
+    const runNumber = campaign.currentRun + 1;
+    
+    alert.showAlert({
+      type: 'warning',
+      title: 'Retry Campaign',
+      message: `Are you sure you want to retry "${campaignName}"? This will attempt to run the campaign again (run ${runNumber} of ${campaign.maxRuns}).`,
+      confirmText: 'Retry Campaign',
+      cancelText: 'Cancel',
+      onConfirm: async () => {
+        try {
+          const response = await retryCampaign(encryptedId);
+          
+          if (response.success) {
+            const successMessage = response.message || `Campaign retry started successfully!`;
+            
+            // Show both toast and success alert
+            toast.success(successMessage);
+            alert.success(successMessage, {
+              title: 'Campaign Retry Started',
+              duration: 4000
+            });
+          } else {
+            const errorMessage = response.message || 'Failed to retry campaign';
+            toast.error(errorMessage);
+            alert.error(errorMessage, {
+              title: 'Campaign Retry Failed',
+              duration: 5000
+            });
+          }
+        } catch (error: any) {
+          const errorMessage = error?.message || 'Failed to retry campaign';
+          toast.error(errorMessage);
+          alert.error(errorMessage, {
+            title: 'Campaign Retry Failed',
             duration: 5000
           });
         }
@@ -490,7 +547,7 @@ export const Campaigns: React.FC = () => {
                   
                   return (
                     <button
-                                                onClick={() => handleRunCampaign(campaign.encrypted_id, campaign.name)}
+                      onClick={() => handleRunCampaign(campaign.encrypted_id, campaign.name)}
                       className={`flex-1 flex items-center justify-center px-3 sm:px-4 py-2.5 rounded-lg font-medium transition-all duration-200 shadow-sm ${
                         isFutureDate && isFirstRun
                           ? isDark
@@ -545,6 +602,24 @@ export const Campaigns: React.FC = () => {
                   </span>
                 </div>
               ) : null}
+              
+              {/* Retry button - only show after first run and before max runs */}
+              {campaign.currentRun > 0 && campaign.currentRun < campaign.maxRuns && campaign.status !== 'in_progress' && (
+                <button
+                  onClick={() => handleRetryCampaign(campaign.encrypted_id, campaign.name)}
+                  className={`flex-1 flex items-center justify-center px-3 sm:px-4 py-2.5 rounded-lg font-medium transition-all duration-200 shadow-sm ${
+                    isDark
+                      ? 'bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white shadow-orange-500/20 hover:shadow-orange-500/30'
+                      : 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-orange-500/20 hover:shadow-orange-500/30'
+                  } hover:shadow-lg transform hover:scale-105`}
+                >
+                  <RotateCcw className="h-4 sm:h-5 w-4 sm:w-5 mr-2" />
+                  <span className="text-sm font-semibold">
+                    <span className="hidden sm:inline">Retry</span>
+                    <span className="sm:hidden">Retry</span>
+                  </span>
+                </button>
+              )}
             </div>
           </div>
               ))}

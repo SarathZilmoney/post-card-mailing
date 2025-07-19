@@ -34,12 +34,13 @@ export const CampaignView: React.FC = () => {
   const navigate = useNavigate();
   const { isDark } = useTheme();
   const alert = useAlert();
-  const { getCampaign, runCampaign, deleteCampaign } = useCampaigns();
+  const { getCampaign, runCampaign, retryCampaign, deleteCampaign } = useCampaigns();
   
   const [campaign, setCampaign] = useState<DetailedCampaign | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRunning, setIsRunning] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   
   // Pagination state for addresses
@@ -95,6 +96,43 @@ export const CampaignView: React.FC = () => {
     } finally {
       setIsRunning(false);
     }
+  };
+
+  const handleRetryCampaign = async () => {
+    if (!campaign) return;
+    
+    // Show confirmation modal before retrying
+    alert.showAlert({
+      type: 'warning',
+      title: 'Retry Campaign',
+      message: `Are you sure you want to retry "${campaign.campaign_name}"? This will attempt to run the campaign again.`,
+      confirmText: 'Retry Campaign',
+      cancelText: 'Cancel',
+      onConfirm: async () => {
+        try {
+          setIsRetrying(true);
+          const response = await retryCampaign(encryptedId!);
+          
+          alert.success(response.message || 'Campaign retry started successfully!', {
+            title: 'Success',
+            duration: 4000
+          });
+          
+          // Refresh campaign data
+          await fetchCampaign();
+        } catch (err) {
+          alert.error(err instanceof Error ? err.message : 'Failed to retry campaign', {
+            title: 'Error',
+            duration: 5000
+          });
+        } finally {
+          setIsRetrying(false);
+        }
+      },
+      onCancel: () => {
+        // Do nothing on cancel
+      }
+    });
   };
 
   const handleDeleteCampaign = () => {
@@ -843,6 +881,28 @@ export const CampaignView: React.FC = () => {
                   )}
                   <span>{isRunning ? 'Starting...' : 'Run Campaign'}</span>
                 </button>
+                
+                {/* Retry button - only show after first run and before max runs */}
+                {campaign.run_count > 0 && campaign.run_count < 3 && (
+                  <button
+                    onClick={handleRetryCampaign}
+                    disabled={isRetrying}
+                    className={`w-full px-4 py-2 rounded-lg flex items-center justify-center space-x-2 ${
+                      isRetrying
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : isDark 
+                          ? 'bg-orange-600 hover:bg-orange-700 text-white' 
+                          : 'bg-orange-500 hover:bg-orange-600 text-white'
+                    } transition-colors`}
+                  >
+                    {isRetrying ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RotateCcw className="h-4 w-4" />
+                    )}
+                    <span>{isRetrying ? 'Retrying...' : 'Retry Campaign'}</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
