@@ -290,6 +290,13 @@ export const CampaignView: React.FC = () => {
     }
   };
 
+  // Determine if campaign is completed
+  const isCampaignCompleted = () => {
+    if (!campaign) return false;
+    // Campaign is considered completed if it has reached max execution count (3) or has no next scheduled run
+    return campaign.execution_count >= 3 || (!campaign.next_scheduled_run_at && campaign.execution_count > 0);
+  };
+
   // Pagination calculations
   const totalAddresses = campaign?.addresses.length || 0;
   const totalPages = Math.ceil(totalAddresses / addressesPerPage);
@@ -593,35 +600,37 @@ export const CampaignView: React.FC = () => {
           </div>
         </div>
 
-        <div className={`${
-          isDark ? 'glass-dark' : 'glass-light'
-        } rounded-2xl p-6 ${
-          isDark ? 'hover:border-purple-500/30' : 'hover:border-brand-primary-300/50'
-        } transition-all duration-300`}>
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <div className={`w-12 h-12 ${
-                isDark 
-                  ? 'bg-gradient-to-br from-orange-500/20 to-red-500/20' 
-                  : 'bg-gradient-to-br from-orange-100 to-red-100'
-              } rounded-xl flex items-center justify-center`}>
-                <Clock className={`h-6 w-6 ${
-                  isDark ? 'text-orange-400' : 'text-orange-600'
-                }`} />
+        {!isCampaignCompleted() && (
+          <div className={`${
+            isDark ? 'glass-dark' : 'glass-light'
+          } rounded-2xl p-6 ${
+            isDark ? 'hover:border-purple-500/30' : 'hover:border-brand-primary-300/50'
+          } transition-all duration-300`}>
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className={`w-12 h-12 ${
+                  isDark 
+                    ? 'bg-gradient-to-br from-orange-500/20 to-red-500/20' 
+                    : 'bg-gradient-to-br from-orange-100 to-red-100'
+                } rounded-xl flex items-center justify-center`}>
+                  <Clock className={`h-6 w-6 ${
+                    isDark ? 'text-orange-400' : 'text-orange-600'
+                  }`} />
+                </div>
+              </div>
+              <div className="ml-5 w-0 flex-1">
+                <dl>
+                  <dt className={`text-sm font-medium ${
+                    isDark ? 'text-gray-400' : 'text-light-600'
+                  } truncate`}>Next Run In</dt>
+                  <dd className={`text-2xl font-semibold ${
+                    isDark ? 'text-white' : 'text-light-900'
+                  }`}>{getRemainingDays(campaign.next_scheduled_run_at)}</dd>
+                </dl>
               </div>
             </div>
-            <div className="ml-5 w-0 flex-1">
-              <dl>
-                <dt className={`text-sm font-medium ${
-                  isDark ? 'text-gray-400' : 'text-light-600'
-                } truncate`}>Next Run In</dt>
-                <dd className={`text-2xl font-semibold ${
-                  isDark ? 'text-white' : 'text-light-900'
-                }`}>{getRemainingDays(campaign.next_scheduled_run_at)}</dd>
-              </dl>
-            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Campaign Details */}
@@ -1000,31 +1009,33 @@ export const CampaignView: React.FC = () => {
             
             <div className="space-y-4">
               <div className="flex items-center space-x-3">
-                {getStatusIcon('in_progress')}
-                <span className={`font-medium ${getStatusColor('in_progress')}`}>
-                  Active
+                {isCampaignCompleted() ? getStatusIcon('completed') : getStatusIcon('in_progress')}
+                <span className={`font-medium ${isCampaignCompleted() ? getStatusColor('completed') : getStatusColor('in_progress')}`}>
+                  {isCampaignCompleted() ? 'Completed' : 'Active'}
                 </span>
               </div>
               
               <div className="space-y-3">
-                <button
-                  onClick={handleRunCampaign}
-                  disabled={isRunning}
-                  className={`w-full px-4 py-2 rounded-lg flex items-center justify-center space-x-2 ${
-                    isRunning
-                      ? 'bg-gray-400 cursor-not-allowed'
-                      : isDark 
-                        ? 'bg-purple-600 hover:bg-purple-700 text-white' 
-                        : 'bg-brand-primary-600 hover:bg-brand-primary-700 text-white'
-                  } transition-colors`}
-                >
-                  {isRunning ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <PlayCircle className="h-4 w-4" />
-                  )}
-                  <span>{isRunning ? 'Starting...' : 'Run Campaign'}</span>
-                </button>
+                {!isCampaignCompleted() && (
+                  <button
+                    onClick={handleRunCampaign}
+                    disabled={isRunning}
+                    className={`w-full px-4 py-2 rounded-lg flex items-center justify-center space-x-2 ${
+                      isRunning
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : isDark 
+                          ? 'bg-purple-600 hover:bg-purple-700 text-white' 
+                          : 'bg-brand-primary-600 hover:bg-brand-primary-700 text-white'
+                    } transition-colors`}
+                  >
+                    {isRunning ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <PlayCircle className="h-4 w-4" />
+                    )}
+                    <span>{isRunning ? 'Starting...' : 'Run Campaign'}</span>
+                  </button>
+                )}
                 
                 {/* Retry button - show when addresses exist or execution count > 0, and before max runs */}
                 {(campaign.addresses.length > 0 || campaign.execution_count > 0) && campaign.execution_count < 3 && (
